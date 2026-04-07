@@ -1,0 +1,6 @@
+- [x] O projeto Next.js foi inicializado com sucesso e roda localmente, aplicando boas práticas de performance do Vercel.
+- [x] O layout base com Sidebar e Header foi implementado com um design moderno e responsivo.
+- [x] A Dashboard do Fornecedor possui as telas principais de Produtos, Pedidos e Revendedores criadas e navegáveis.
+- [x] A tela "Minha Loja" do Revendedor exibe as abas corretas e o checklist de status da loja, condizente com as imagens de referência.
+- [x] A tela "Visual do Site" do Revendedor permite visualizar e organizar os blocos da página, além de configurar SEO, correspondendo à estrutura das imagens anexadas.
+- [x] O design é profissional, garantindo uma boa experiência de usuário (UX) e interface (UI) limpa.

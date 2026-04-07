@@ -1,0 +1,8 @@
+- [x] As dependências do Supabase (`@supabase/ssr`, `@supabase/supabase-js`) foram instaladas com sucesso.
+- [x] Os utilitários do Supabase (client, server, middleware) foram criados corretamente.
+- [x] O arquivo `.env.example` foi criado com as variáveis de ambiente necessárias.
+- [x] A página de Login foi criada com um design moderno utilizando os componentes do shadcn.
+- [x] A Server Action de login foi implementada utilizando o Supabase Auth.
+- [x] O `middleware.ts` está protegendo as rotas `/supplier` e `/reseller` contra acessos não autenticados.
+- [x] O redirecionamento por Role (Admin -> `/supplier`, Reseller -> `/reseller`) foi implementado com base nos metadados do usuário.
+- [x] O arquivo `supabase-schema.sql` foi criado com as instruções para o banco de dados.
