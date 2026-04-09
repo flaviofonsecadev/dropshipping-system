@@ -3,7 +3,14 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
-export async function loginAction(prevState: any, formData: FormData) {
+type AuthActionState =
+  | {
+      error?: string
+      success?: string
+    }
+  | null
+
+export async function loginAction(_prevState: AuthActionState, formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
@@ -25,7 +32,7 @@ export async function loginAction(prevState: any, formData: FormData) {
   redirect('/')
 }
 
-export async function signupAction(prevState: any, formData: FormData) {
+export async function signupAction(_prevState: AuthActionState, formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
