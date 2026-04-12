@@ -63,6 +63,12 @@ const allNavItems = [
     roles: ["reseller", "admin"],
   },
   {
+    title: "Pedidos",
+    url: "/reseller/orders",
+    icon: ShoppingCart,
+    roles: ["reseller", "admin"],
+  },
+  {
     title: "Loja",
     url: "/reseller/store",
     icon: Store,
