@@ -59,13 +59,13 @@ export default function SupplierResellersPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Supplier | Parceiros</h2>
-          <p className="text-muted-foreground">Gerencie parceiros reseller e acompanhe sua performance.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Revendedores</h2>
+          <p className="text-muted-foreground mt-1">Gerencie sua rede de revendedores e acompanhe o desempenho em vendas.</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button>
             <UserPlus className="mr-2 h-4 w-4" />
-            Convidar Parceiro
+            Convidar Revendedor
           </Button>
         </div>
       </div>
@@ -74,7 +74,7 @@ export default function SupplierResellersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Parceiro Reseller</TableHead>
+              <TableHead>Revendedor</TableHead>
               <TableHead>Contato</TableHead>
               <TableHead>Vendas</TableHead>
               <TableHead>Receita Gerada</TableHead>

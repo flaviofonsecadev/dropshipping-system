@@ -8,8 +8,8 @@ export default function ResellerPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Reseller | Painel</h2>
-          <p className="text-muted-foreground">Acompanhe sua operação e acesse os principais módulos da sua loja.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Painel Principal</h2>
+          <p className="text-muted-foreground mt-1">Acompanhe sua operação e acesse os principais módulos da sua loja.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button asChild>

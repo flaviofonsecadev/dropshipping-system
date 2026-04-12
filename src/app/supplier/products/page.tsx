@@ -50,8 +50,8 @@ export default function SupplierProductsPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Supplier | Catálogo</h2>
-          <p className="text-muted-foreground">Gerencie o catálogo de produtos da operação supplier.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Catálogo de Produtos</h2>
+          <p className="text-muted-foreground mt-1">Gerencie os itens disponíveis para a sua rede de revendedores.</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button>

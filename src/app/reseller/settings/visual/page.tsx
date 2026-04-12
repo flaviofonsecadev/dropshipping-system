@@ -10,8 +10,8 @@ export default function VisualSettingsPage() {
     <div className="flex-1 space-y-6 p-6 md:p-8 pt-6 max-w-7xl mx-auto w-full">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Reseller | Visual da Loja</h2>
-          <p className="text-muted-foreground mt-1">Gerencie aparência, blocos da página e SEO da sua operação reseller.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">Visual da Loja</h2>
+          <p className="text-muted-foreground mt-1">Gerencie a aparência, os blocos da página e o SEO da sua vitrine.</p>
         </div>
         <Button>
           <Save className="mr-2 h-4 w-4" />

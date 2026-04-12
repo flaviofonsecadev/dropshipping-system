@@ -54,8 +54,8 @@ export default function SupplierOrdersPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Supplier | Pedidos</h2>
-          <p className="text-muted-foreground">Visualize e gerencie os pedidos recebidos via parceiros reseller.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Pedidos da Rede</h2>
+          <p className="text-muted-foreground mt-1">Visualize e gerencie os pedidos processados pelos seus revendedores.</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline">
