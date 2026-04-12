@@ -11,7 +11,15 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Home, Package, ShoppingCart, Users } from "lucide-react"
+import {
+  Home,
+  LayoutDashboard,
+  Package,
+  Palette,
+  ShoppingCart,
+  Store,
+  Users,
+} from "lucide-react"
 import Link from "next/link"
 
 const data = {
@@ -22,29 +30,39 @@ const data = {
       icon: Home,
     },
     {
-      title: "Fornecedor - Dashboard",
+      title: "Supplier | Painel",
       url: "/supplier",
-      icon: Package,
+      icon: LayoutDashboard,
     },
     {
-      title: "Fornecedor - Produtos",
+      title: "Supplier | Catálogo",
       url: "/supplier/products",
       icon: Package,
     },
     {
-      title: "Fornecedor - Pedidos",
+      title: "Supplier | Pedidos",
       url: "/supplier/orders",
       icon: ShoppingCart,
     },
     {
-      title: "Fornecedor - Revendedores",
+      title: "Supplier | Parceiros",
       url: "/supplier/resellers",
       icon: Users,
     },
     {
-      title: "Revendedor",
+      title: "Reseller | Painel",
       url: "/reseller",
-      icon: ShoppingCart,
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Reseller | Loja",
+      url: "/reseller/store",
+      icon: Store,
+    },
+    {
+      title: "Reseller | Visual",
+      url: "/reseller/settings/visual",
+      icon: Palette,
     },
   ],
 }

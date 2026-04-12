@@ -50,13 +50,13 @@ export default function SupplierProductsPage() {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Produtos</h2>
-          <p className="text-muted-foreground">Gerencie o seu catálogo de produtos.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Supplier | Catálogo</h2>
+          <p className="text-muted-foreground">Gerencie o catálogo de produtos da operação supplier.</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Adicionar Produto
+            Novo Produto
           </Button>
         </div>
       </div>

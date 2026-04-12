@@ -1,7 +1,7 @@
 -- Tabela de Perfis
 CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  role TEXT CHECK (role IN ('admin', 'reseller')) DEFAULT 'reseller' NOT NULL,
+  role TEXT CHECK (role IN ('admin', 'supplier', 'reseller')) DEFAULT 'reseller' NOT NULL,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );

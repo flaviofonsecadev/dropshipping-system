@@ -9,10 +9,10 @@ export default function Home() {
       </h1>
       <div className="flex gap-4">
         <Button size="lg" asChild>
-          <Link href="/supplier">Portal do Fornecedor</Link>
+          <Link href="/supplier">Portal Supplier</Link>
         </Button>
         <Button variant="outline" size="lg" asChild>
-          <Link href="/reseller">Portal do Revendedor</Link>
+          <Link href="/reseller">Portal Reseller</Link>
         </Button>
       </div>
     </main>
