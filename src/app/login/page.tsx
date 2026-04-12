@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Crown } from 'lucide-react'
 
 export default function LoginPage() {
   const [lastSubmittedAction, setLastSubmittedAction] = useState<AuthActionType>('login')
@@ -29,18 +30,25 @@ export default function LoginPage() {
       : 'text-sm text-red-500 font-medium'
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 bg-muted/50">
-      <Card className="w-full max-w-sm">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-zinc-950">
+      <div className="flex flex-col items-center mb-8 gap-3">
+        <Crown className="w-12 h-12 text-amber-400" />
+        <h1 className="text-white text-3xl font-bold tracking-tight text-center">
+          Dropshipping <span className="text-amber-400">Milionário</span>
+        </h1>
+      </div>
+
+      <Card className="w-full max-w-sm border-zinc-800 bg-zinc-900/50 backdrop-blur-md">
         <CardHeader>
-          <CardTitle className="text-2xl">Acesso</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl text-zinc-50">Acesso</CardTitle>
+          <CardDescription className="text-zinc-400">
             Entre na sua conta ou crie uma nova.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email" className="text-zinc-200">E-mail</Label>
               <Input
                 id="email"
                 name="email"
@@ -48,22 +56,24 @@ export default function LoginPage() {
                 placeholder="m@exemplo.com"
                 required
                 disabled={isPending}
+                className="bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 focus-visible:ring-amber-400"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="text-zinc-200">Senha</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
                 required
                 disabled={isPending}
+                className="bg-zinc-950 border-zinc-800 text-zinc-50 focus-visible:ring-amber-400"
               />
             </div>
 
             {feedbackState.status !== 'idle' && (
               <p
-                className={feedbackClassName}
+                className={feedbackState.status === 'success' ? 'text-sm text-amber-400 font-medium' : 'text-sm text-red-500 font-medium'}
                 role={feedbackState.status === 'error' ? 'alert' : 'status'}
                 aria-live="polite"
               >
@@ -75,7 +85,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 formAction={loginDispatch}
-                className="w-full"
+                className="w-full bg-amber-400 text-black hover:bg-amber-500"
                 disabled={isPending}
                 onClick={() => setLastSubmittedAction('login')}
               >
@@ -85,7 +95,7 @@ export default function LoginPage() {
                 type="submit"
                 formAction={signupDispatch}
                 variant="outline"
-                className="w-full"
+                className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50"
                 disabled={isPending}
                 onClick={() => setLastSubmittedAction('signup')}
               >

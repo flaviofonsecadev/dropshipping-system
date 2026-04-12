@@ -24,8 +24,8 @@ export async function POST(request: Request) {
     }
 
     // 1. Calcula o total de cada recebedor
-    const totalSupplier = items.reduce((acc: number, item: any) => acc + (item.base_cost * item.qty), 0) + shipping_cost
-    const totalReseller = items.reduce((acc: number, item: any) => acc + (item.reseller_margin * item.qty), 0)
+    const totalSupplier = items.reduce((acc: number, item: { base_cost: number, qty: number }) => acc + (item.base_cost * item.qty), 0) + shipping_cost
+    const totalReseller = items.reduce((acc: number, item: { reseller_margin: number, qty: number }) => acc + (item.reseller_margin * item.qty), 0)
     const grandTotal = totalSupplier + totalReseller
 
     // 2. Mock de Payload ASAAS para a API de pagamentos (com Split)
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       payload: asaasPayload
     })
     
-  } catch (error) {
+  } catch (error: unknown) {
     return NextResponse.json(
       { error: "Erro ao processar transação no Asaas." },
       { status: 500 }

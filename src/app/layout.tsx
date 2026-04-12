@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sistema Dropshipping",
-  description: "Plataforma de dropshipping para fornecedores e revendedores",
+  title: "Dropshipping Milionário",
+  description: "Transforme seu CNPJ/CPF em uma loja virtual lucrativa sem precisar de estoque.",
 };
 
 export default async function RootLayout({

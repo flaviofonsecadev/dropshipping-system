@@ -231,7 +231,7 @@ export default function ResellerStorePage() {
                   <p className="text-sm font-medium mb-1">Domínio Atual</p>
                   <div className="flex items-center gap-2 text-primary font-mono text-sm">
                     <Globe className="w-4 h-4" />
-                    <span>sualoja.dropsystem.app</span>
+                    <span>sualoja.dropshippingmilionario.com.br</span>
                   </div>
                 </div>
                 

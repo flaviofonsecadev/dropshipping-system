@@ -21,6 +21,7 @@ import {
   Users,
   LogOut,
   User,
+  Crown,
 } from "lucide-react"
 import Link from "next/link"
 import { logoutAction } from "@/app/login/actions"
@@ -99,13 +100,14 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   })
 
   return (
-    <Sidebar variant="sidebar" className="dark bg-zinc-950 text-zinc-50 border-r-zinc-800" {...props}>
-      <SidebarHeader className="h-16 flex items-center px-4 border-b border-zinc-800">
+    <Sidebar variant="sidebar" className="dark bg-black/90 backdrop-blur-md text-zinc-50 border-r-white/10" {...props}>
+      <SidebarHeader className="h-20 flex items-center px-4 border-b border-white/10">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <ShoppingCart className="size-4" />
+          <Crown className="w-8 h-8 text-amber-400" />
+          <div className="flex flex-col gap-0.5 leading-none">
+            <span className="font-semibold text-base text-white tracking-tight">Dropshipping</span>
+            <span className="text-xs text-amber-400 font-bold tracking-tight">Milionário</span>
           </div>
-          <span>DropSystem</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
