@@ -8,12 +8,12 @@ export default function Home() {
         Sistema Dropshipping
       </h1>
       <div className="flex gap-4">
-        <Link href="/supplier">
-          <Button size="lg">Portal do Fornecedor</Button>
-        </Link>
-        <Link href="/reseller">
-          <Button variant="outline" size="lg">Portal do Revendedor</Button>
-        </Link>
+        <Button size="lg" asChild>
+          <Link href="/supplier">Portal do Fornecedor</Link>
+        </Button>
+        <Button variant="outline" size="lg" asChild>
+          <Link href="/reseller">Portal do Revendedor</Link>
+        </Button>
       </div>
     </main>
   );
