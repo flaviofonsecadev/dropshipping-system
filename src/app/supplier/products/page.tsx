@@ -15,6 +15,8 @@ const products = [
     id: "PROD-001",
     name: "Camiseta Básica de Algodão",
     sku: "TSH-COT-BLK",
+    baseCost: 25.00,
+    suggestedMargin: 24.90,
     price: "R$ 49,90",
     stock: 120,
     status: "Ativo",
@@ -23,6 +25,8 @@ const products = [
     id: "PROD-002",
     name: "Calça Jeans Slim",
     sku: "JNS-SLM-BLU",
+    baseCost: 80.00,
+    suggestedMargin: 79.90,
     price: "R$ 159,90",
     stock: 45,
     status: "Ativo",
@@ -31,6 +35,8 @@ const products = [
     id: "PROD-003",
     name: "Tênis Esportivo Casual",
     sku: "SNE-SPO-WHT",
+    baseCost: 150.00,
+    suggestedMargin: 149.90,
     price: "R$ 299,90",
     stock: 0,
     status: "Esgotado",
@@ -39,6 +45,8 @@ const products = [
     id: "PROD-004",
     name: "Jaqueta Corta Vento",
     sku: "JKT-WND-GRY",
+    baseCost: 90.00,
+    suggestedMargin: 99.90,
     price: "R$ 189,90",
     stock: 32,
     status: "Rascunho",
@@ -67,7 +75,9 @@ export default function SupplierProductsPage() {
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>SKU</TableHead>
-              <TableHead>Preço</TableHead>
+              <TableHead>Custo Base</TableHead>
+              <TableHead>Margem Sug.</TableHead>
+              <TableHead>Preço Final</TableHead>
               <TableHead>Estoque</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-[80px]"></TableHead>
@@ -78,6 +88,8 @@ export default function SupplierProductsPage() {
               <TableRow key={product.id}>
                 <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell>{product.sku}</TableCell>
+                <TableCell>R$ {product.baseCost.toFixed(2).replace('.', ',')}</TableCell>
+                <TableCell>R$ {product.suggestedMargin.toFixed(2).replace('.', ',')}</TableCell>
                 <TableCell>{product.price}</TableCell>
                 <TableCell>{product.stock}</TableCell>
                 <TableCell>

@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CheckCircle2, Store, CreditCard, Paintbrush, Truck, Globe, Settings } from "lucide-react"
+import { CheckCircle2, Store, CreditCard, Paintbrush, Truck, Globe, Settings, DollarSign } from "lucide-react"
 
 export default function ResellerStorePage() {
   return (
@@ -37,6 +37,10 @@ export default function ResellerStorePage() {
           <TabsTrigger value="dominio" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background px-4 py-2 rounded-md">
             <Globe className="w-4 h-4 mr-2" />
             Domínio
+          </TabsTrigger>
+          <TabsTrigger value="precificacao" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background px-4 py-2 rounded-md">
+            <DollarSign className="w-4 h-4 mr-2" />
+            Precificação Global
           </TabsTrigger>
           <TabsTrigger value="pagamentos" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border bg-background px-4 py-2 rounded-md">
             <CreditCard className="w-4 h-4 mr-2" />
@@ -218,19 +222,62 @@ export default function ResellerStorePage() {
             <CardHeader>
               <CardTitle>Domínio Personalizado</CardTitle>
               <CardDescription>
-                Conecte seu domínio próprio para fortalecer sua marca (ex: www.sualoja.com.br).
+                Conecte seu domínio próprio para dar mais profissionalismo à sua loja (ex: www.sualoja.com.br).
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-center max-w-lg mx-auto space-y-4">
-                <div className="bg-primary/10 p-4 rounded-full">
-                  <Globe className="w-12 h-12 text-primary" />
+            <CardContent className="space-y-6">
+              <div className="space-y-4 max-w-2xl">
+                <div className="bg-muted/50 p-4 rounded-lg border">
+                  <p className="text-sm font-medium mb-1">Domínio Atual</p>
+                  <div className="flex items-center gap-2 text-primary font-mono text-sm">
+                    <Globe className="w-4 h-4" />
+                    <span>sualoja.dropsystem.app</span>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold">Configure seu domínio</h3>
-                <p className="text-muted-foreground">Você está utilizando o domínio padrão: <strong>minhaloja.plataforma.com</strong></p>
-                <Button className="mt-4">Conectar domínio existente</Button>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="custom-domain" className="text-sm font-medium">Novo Domínio</Label>
+                  <div className="flex gap-2">
+                    <Input id="custom-domain" placeholder="www.sualoja.com.br" className="h-11 flex-1" />
+                    <Button className="h-11 px-8">Conectar</Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Você precisará configurar os apontamentos DNS (CNAME e A) no seu provedor de registro.</p>
+                </div>
               </div>
             </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="precificacao" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle>Precificação Global</CardTitle>
+              <CardDescription>
+                Defina as regras globais de precificação e margem de lucro para os produtos do catálogo.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4 max-w-2xl">
+                <div className="space-y-2">
+                  <Label htmlFor="global-margin" className="text-sm font-medium">Margem de Lucro Padrão (%)</Label>
+                  <Input id="global-margin" type="number" placeholder="Ex: 30" className="h-11" />
+                  <p className="text-xs text-muted-foreground mt-1">Essa margem será aplicada automaticamente a novos produtos importados do fornecedor caso você não defina uma margem específica para o produto.</p>
+                </div>
+                
+                <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20 text-blue-700 dark:text-blue-400">
+                  <h4 className="text-sm font-semibold flex items-center gap-2 mb-1">
+                    <DollarSign className="w-4 h-4" />
+                    Como funciona o Split de Pagamentos?
+                  </h4>
+                  <p className="text-xs leading-relaxed">
+                    Quando uma venda é realizada, o sistema ASAAS divide automaticamente o valor. O <strong>Custo Base + Frete</strong> vai direto para a conta do Fornecedor, e a <strong>Sua Margem de Lucro</strong> vai direto para a sua subconta. Você não precisa se preocupar com repasses manuais.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="bg-muted/20 border-t py-4">
+              <Button className="ml-auto">Salvar Regras</Button>
+            </CardFooter>
           </Card>
         </TabsContent>
 
