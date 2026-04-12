@@ -18,16 +18,20 @@ CREATE POLICY "Usuários podem ver seu próprio perfil"
   USING (auth.uid() = id);
 
 -- 2. Administradores podem visualizar todos os perfis
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+DECLARE
+  _role TEXT;
+BEGIN
+  SELECT role INTO _role FROM public.profiles WHERE id = auth.uid();
+  RETURN _role = 'admin';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 CREATE POLICY "Administradores podem ver todos os perfis"
   ON public.profiles
   FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 
-      FROM public.profiles 
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- 3. Os usuários podem atualizar seu próprio perfil
 CREATE POLICY "Usuários podem atualizar seu próprio perfil"
@@ -39,13 +43,7 @@ CREATE POLICY "Usuários podem atualizar seu próprio perfil"
 CREATE POLICY "Administradores podem atualizar todos os perfis"
   ON public.profiles
   FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 
-      FROM public.profiles 
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- Função para auto-inserir perfil no signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()

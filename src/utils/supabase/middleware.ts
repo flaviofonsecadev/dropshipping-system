@@ -93,9 +93,34 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
-  let role = normalizeRole(user.user_metadata?.role)
+  let role: AppRole | null = null
 
-  if (!role) {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  if (serviceRoleKey) {
+    // Usamos Service Role aqui para contornar qualquer possível cache/RLS e garantir leitura confiável da role real
+    const adminSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      {
+        cookies: {
+          getAll() {
+            return []
+          },
+          setAll() {}
+        }
+      }
+    )
+
+    const { data: profile } = await adminSupabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    role = normalizeRole(profile?.role)
+  } else {
+    // Fallback: se não tem chave de admin, usa a instância supabase do usuário logado
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
@@ -103,6 +128,10 @@ export async function updateSession(request: NextRequest) {
       .single()
 
     role = normalizeRole(profile?.role)
+  }
+
+  if (!role) {
+    role = normalizeRole(user.user_metadata?.role)
   }
 
   if (!role) {

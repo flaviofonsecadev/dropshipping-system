@@ -95,3 +95,9 @@ export async function signupAction(
 
   return createAuthState('signup', 'success', 'Verifique seu e-mail para confirmar o cadastro!')
 }
+
+export async function logoutAction() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
+}
