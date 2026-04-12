@@ -83,8 +83,9 @@ export async function updateSession(request: NextRequest) {
   const isAdminRoute = pathname.startsWith('/admin')
   const isPrivateRoute = isSupplierRoute || isResellerRoute || isAdminRoute
   const isLoginRoute = pathname === '/login'
+  const isRootRoute = pathname === '/'
 
-  if (!user && isPrivateRoute) {
+  if (!user && (isPrivateRoute || isRootRoute)) {
     url.pathname = '/login'
     return createRedirectResponse(url, supabaseResponse)
   }
@@ -144,8 +145,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   const roleHome = getInitialRouteForRole(role)
+  const isRecoveryMode = url.searchParams.get('type') === 'recovery'
 
-  if (isLoginRoute) {
+  // Permite acesso à tela de login se for para recuperar senha, caso contrário redireciona
+  if ((isLoginRoute && !isRecoveryMode) || isRootRoute) {
     url.pathname = roleHome
     return createRedirectResponse(url, supabaseResponse)
   }

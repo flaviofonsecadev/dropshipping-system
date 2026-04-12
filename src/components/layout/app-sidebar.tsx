@@ -28,12 +28,6 @@ import { logoutAction } from "@/app/login/actions"
 
 const allNavItems = [
   {
-    title: "Início",
-    url: "/",
-    icon: Home,
-    roles: ["all"],
-  },
-  {
     title: "Painel",
     url: "/supplier",
     icon: LayoutDashboard,
