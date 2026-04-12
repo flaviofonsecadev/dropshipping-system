@@ -1,0 +1,11 @@
+- [x] Migration que altera a tabela `products` para incluir colunas `images` e `videos` executada com sucesso.
+- [x] Bucket `product-media` criado no Supabase Storage e acessível publicamente (leitura).
+- [x] Formulário de Criação de Produto (Fornecedor) impede adicionar mais de 5 imagens.
+- [x] O componente híbrido permite salvar produtos usando apenas links externos, sem fazer upload.
+- [x] O componente híbrido permite salvar produtos fazendo upload de arquivos para o Supabase.
+- [x] O componente de mídia aceita que o vídeo seja opcional (cadastro funciona sem vídeo).
+- [x] O Frontend exibe erro de tamanho se tentar fazer upload direto de imagens maiores que 2MB ou vídeos maiores que 15MB.
+- [x] Produto pode ser salvo com sucesso, contendo as URLs corretas das imagens e do vídeo no banco de dados.
+- [x] O Catálogo interno do Fornecedor e Revendedor (telas de listagem em grid/tabela) exibem a primeira imagem do produto (`images[0]`) como capa.
+- [x] A tela de Detalhes ou Edição do produto exibe corretamente todas as outras fotos (até 5) anexadas ao produto.
+- [x] A tela de Detalhes ou Edição do produto exibe corretamente o vídeo anexado (seja player nativo para uploads ou embed para links externos como YouTube).

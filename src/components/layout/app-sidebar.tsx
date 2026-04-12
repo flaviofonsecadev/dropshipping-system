@@ -13,7 +13,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import {
-  Home,
   LayoutDashboard,
   Package,
   Palette,
@@ -56,6 +55,12 @@ const allNavItems = [
     title: "Painel",
     url: "/reseller",
     icon: LayoutDashboard,
+    roles: ["reseller", "admin"],
+  },
+  {
+    title: "Catálogo",
+    url: "/reseller/products",
+    icon: Package,
     roles: ["reseller", "admin"],
   },
   {
