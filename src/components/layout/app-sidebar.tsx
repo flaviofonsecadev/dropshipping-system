@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import {
   Home,
@@ -85,6 +86,8 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
+  const { setOpenMobile, isMobile } = useSidebar()
+  
   // Se não estiver logado, exibe apenas "all" (Início)
   // Se logado, exibe os links compatíveis com a role
   const filteredNavItems = allNavItems.filter((item) => {
@@ -94,9 +97,17 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   })
 
   return (
-    <Sidebar variant="sidebar" className="dark bg-black/90 backdrop-blur-md text-zinc-50 border-r-white/10" {...props}>
+    <Sidebar variant="sidebar" className="dark bg-black/90 backdrop-blur-md text-zinc-50 border-r-white/10 [&>div[data-sidebar=sidebar]]:bg-transparent" {...props}>
       <SidebarHeader className="h-20 flex items-center px-4 border-b border-white/10">
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+        <Link 
+          href="/" 
+          className="flex items-center gap-2 font-bold text-lg"
+          onClick={() => {
+            if (isMobile) {
+              setOpenMobile(false)
+            }
+          }}
+        >
           <Crown className="w-8 h-8 text-amber-400" />
           <div className="flex flex-col gap-0.5 leading-none">
             <span className="font-semibold text-base text-white tracking-tight">Dropshipping</span>
@@ -108,7 +119,16 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         <SidebarMenu className="px-2 pt-4">
           {filteredNavItems.map((item, index) => (
             <SidebarMenuItem key={`${item.title}-${index}`}>
-              <SidebarMenuButton tooltip={item.title} className="hover:bg-zinc-800 hover:text-zinc-50" render={<Link href={item.url} />}>
+              <SidebarMenuButton 
+                tooltip={item.title} 
+                className="hover:bg-zinc-800 hover:text-zinc-50" 
+                render={<Link href={item.url} />}
+                onClick={() => {
+                  if (isMobile) {
+                    setOpenMobile(false)
+                  }
+                }}
+              >
                 <item.icon />
                 <span>{item.title}</span>
               </SidebarMenuButton>
@@ -119,7 +139,15 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       <SidebarFooter className="border-t border-zinc-800 p-4">
         {user ? (
           <div className="flex items-center justify-between w-full">
-            <Link href="/profile" className="flex items-center gap-2 hover:bg-zinc-800 p-1 rounded-md transition-colors flex-1 overflow-hidden">
+            <Link 
+              href="/profile" 
+              className="flex items-center gap-2 hover:bg-zinc-800 p-1 rounded-md transition-colors flex-1 overflow-hidden"
+              onClick={() => {
+                if (isMobile) {
+                  setOpenMobile(false)
+                }
+              }}
+            >
               <div className="size-8 shrink-0 rounded-full bg-zinc-800 flex items-center justify-center">
                 <User className="size-4 text-zinc-400" />
               </div>
@@ -140,7 +168,15 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
           </div>
         ) : (
           <div className="flex justify-center w-full">
-            <Link href="/login" className="text-sm font-medium text-primary hover:underline">
+            <Link 
+              href="/login" 
+              className="text-sm font-medium text-primary hover:underline"
+              onClick={() => {
+                if (isMobile) {
+                  setOpenMobile(false)
+                }
+              }}
+            >
               Fazer Login
             </Link>
           </div>

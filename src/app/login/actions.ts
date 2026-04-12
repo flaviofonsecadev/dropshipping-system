@@ -70,7 +70,10 @@ export async function loginAction(
     role = normalizeRole(profile?.role)
   }
 
-  redirect(role ? getInitialRouteForRole(role) : '/')
+  // Em vez de chamar redirect() aqui (que pode causar erro no useActionState), 
+  // retornamos o caminho de destino no message para o client redirecionar.
+  const destination = role ? getInitialRouteForRole(role) : '/'
+  return createAuthState('login', 'success', destination)
 }
 
 export async function signupAction(

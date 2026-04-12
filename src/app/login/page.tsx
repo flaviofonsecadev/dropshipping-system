@@ -25,26 +25,27 @@ export default function LoginPage() {
   // Checar se veio do e-mail de recuperação ou se deu erro de link expirado
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
-    // O Supabase às vezes envia os parâmetros na hash (#) dependendo da configuração
     const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'))
     
-    // Verificar se existe erro de OTP expirado/inválido
     const errorParam = urlParams.get('error') || hashParams.get('error')
     const errorCode = urlParams.get('error_code') || hashParams.get('error_code')
     
     if (errorParam === 'access_denied' && errorCode === 'otp_expired') {
-      setUrlError('O link de recuperação é inválido ou expirou. Por favor, solicite um novo link.')
-      setIsResetMode(true)
-      setLastSubmittedAction('reset_password')
+      setTimeout(() => {
+        setUrlError('O link de recuperação é inválido ou expirou. Por favor, solicite um novo link.')
+        setIsResetMode(true)
+        setLastSubmittedAction('reset_password')
+      }, 0)
       
-      // Limpa a URL para não ficar mostrando o erro sempre se o usuário atualizar a página
       window.history.replaceState({}, document.title, window.location.pathname)
       return
     }
 
     if (urlParams.get('type') === 'recovery' || hashParams.get('type') === 'recovery') {
-      setIsUpdateMode(true)
-      setLastSubmittedAction('update_password')
+      setTimeout(() => {
+        setIsUpdateMode(true)
+        setLastSubmittedAction('update_password')
+      }, 0)
     }
   }, [])
 
@@ -69,10 +70,19 @@ export default function LoginPage() {
     }
   }, [updateState.status])
 
-  const feedbackClassName =
-    feedbackState.status === 'success'
-      ? 'text-sm text-green-600 font-medium'
-      : 'text-sm text-red-500 font-medium'
+  // Redireciona após login bem sucedido
+  useEffect(() => {
+    if (loginState.status === 'success' && loginState.message.startsWith('/')) {
+      window.location.href = loginState.message
+    }
+  }, [loginState])
+
+  const feedbackMessage = () => {
+    if (feedbackState.action === 'login' && feedbackState.status === 'success') {
+      return 'Login realizado com sucesso! Redirecionando...'
+    }
+    return feedbackState.message
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-zinc-950">
@@ -168,7 +178,7 @@ export default function LoginPage() {
                 role={feedbackState.status === 'error' ? 'alert' : 'status'}
                 aria-live="polite"
               >
-                {feedbackState.message}
+                {feedbackMessage()}
               </p>
             )}
 
@@ -230,10 +240,10 @@ export default function LoginPage() {
                     type="submit"
                     formAction={loginDispatch}
                     className="w-full bg-amber-400 text-black hover:bg-amber-500"
-                    disabled={isPending}
+                    disabled={isPending || loginState.status === 'success'}
                     onClick={() => setLastSubmittedAction('login')}
                   >
-                    {isLoginPending ? 'Entrando...' : 'Entrar'}
+                    {isLoginPending || loginState.status === 'success' ? 'Entrando...' : 'Entrar'}
                   </Button>
                   <Button
                     type="submit"
