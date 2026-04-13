@@ -77,9 +77,19 @@ export default function LoginPage() {
     }
   }, [loginState])
 
+  // Redireciona após signup bem sucedido (sem confirmação de e-mail)
+  useEffect(() => {
+    if (signupState.status === 'success' && signupState.message.startsWith('/')) {
+      window.location.href = signupState.message
+    }
+  }, [signupState])
+
   const feedbackMessage = () => {
     if (feedbackState.action === 'login' && feedbackState.status === 'success') {
       return 'Login realizado com sucesso! Redirecionando...'
+    }
+    if (feedbackState.action === 'signup' && feedbackState.status === 'success') {
+      return 'Conta criada com sucesso! Redirecionando...'
     }
     return feedbackState.message
   }
@@ -250,10 +260,10 @@ export default function LoginPage() {
                     formAction={signupDispatch}
                     variant="outline"
                     className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50"
-                    disabled={isPending}
+                    disabled={isPending || signupState.status === 'success'}
                     onClick={() => setLastSubmittedAction('signup')}
                   >
-                    {isSignupPending ? 'Cadastrando...' : 'Cadastrar'}
+                    {isSignupPending || signupState.status === 'success' ? 'Cadastrando...' : 'Cadastrar'}
                   </Button>
                 </>
               )}

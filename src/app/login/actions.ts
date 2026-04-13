@@ -92,7 +92,7 @@ export async function signupAction(
     return createAuthState('signup', 'error', 'A senha deve ter pelo menos 6 caracteres.')
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
   })
@@ -101,7 +101,24 @@ export async function signupAction(
     return createAuthState('signup', 'error', error.message)
   }
 
-  return createAuthState('signup', 'success', 'Verifique seu e-mail para confirmar o cadastro!')
+  let role: AppRole | null = normalizeRole(data.user?.user_metadata?.role)
+
+  if (!role && data.user?.id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single()
+
+    role = normalizeRole(profile?.role)
+  }
+
+  if (!role) {
+    role = 'reseller'
+  }
+
+  const destination = getInitialRouteForRole(role)
+  return createAuthState('signup', 'success', destination)
 }
 
 export async function resetPasswordAction(
