@@ -57,12 +57,12 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
     .eq("is_active", true)
 
   const storeTyped = store as StorefrontStore
-  const typedItems = (items ?? []) as ResellerProductWithProduct[]
+  const typedItems = (items ?? []) as any[]
 
   const products = typedItems
     .filter((i) => Boolean(i.product))
     .map((i) => {
-      const p = i.product as StorefrontProduct
+      const p = (Array.isArray(i.product) ? i.product[0] : i.product) as StorefrontProduct
       const base = Number(p.base_cost) || 0
       const margin = i.custom_margin ?? (Number(p.suggested_margin) || 0)
       return {

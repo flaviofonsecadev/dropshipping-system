@@ -75,8 +75,9 @@ export default async function StorefrontProductPage({
   }
 
   const storeTyped = store as StorefrontStore
-  const rpTyped = rp as ResellerProductWithProduct
-  const product = rpTyped.product as StorefrontProduct
+  const rpTyped = rp as any
+  const rawProduct = Array.isArray(rpTyped.product) ? rpTyped.product[0] : rpTyped.product
+  const product = rawProduct as StorefrontProduct
   const images: string[] = Array.isArray(product.images) ? product.images : []
   const videos: string[] = Array.isArray(product.videos) ? product.videos : []
 
