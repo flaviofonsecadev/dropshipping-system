@@ -1,0 +1,9 @@
+- [x] Existe tabela `reseller_stores` com `slug` único e relação 1:1 com revendedor.
+- [x] RLS garante que revendedor só edita sua própria loja e o público só lê loja publicada.
+- [x] Bucket `store-branding` criado e políticas aplicadas (upload restrito; leitura por URL pública).
+- [x] Painel do revendedor permite criar/editar loja (nome/slug/branding) e publicar/despublicar.
+- [x] Tela de catálogo do revendedor permite ativar/desativar produtos e definir margem, exibindo preço final calculado.
+- [x] Storefront `/loja/[slug]` carrega branding e lista apenas produtos ativos.
+- [x] Storefront `/loja/[slug]/produto/[productId]` exibe detalhes e mídias do produto.
+- [x] Loja não publicada retorna 404 no storefront.
+- [x] Botão “Comprar” gera payload compatível com checkout existente (stub) incluindo `reseller_id` e `store_slug`.

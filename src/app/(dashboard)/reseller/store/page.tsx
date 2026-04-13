@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { CheckCircle2, Store, CreditCard, Paintbrush, Truck, Globe, Settings, DollarSign } from "lucide-react"
+import { redirect } from "next/navigation"
 
 export default function ResellerStorePage() {
+  redirect("/reseller/store/settings")
   return (
     <div className="flex-1 space-y-6 p-6 md:p-8 pt-6 max-w-7xl mx-auto w-full">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
