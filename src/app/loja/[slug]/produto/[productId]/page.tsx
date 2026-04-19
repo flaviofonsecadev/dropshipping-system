@@ -4,6 +4,8 @@ import { createClient } from "@/utils/supabase/server"
 import { BuyButton } from "./buy-button"
 import type { CSSProperties } from "react"
 import { normalizeStorefrontSettings } from "@/lib/storefront-settings"
+import { normalizeVisualSettings } from "@/lib/visual-settings"
+import type { Metadata } from "next"
 
 type StorefrontStore = {
   reseller_id: string
@@ -15,6 +17,7 @@ type StorefrontStore = {
   logo_url: string | null
   headline: string | null
   storefront_settings?: unknown
+  visual_settings?: unknown
 }
 
 type StorefrontProduct = {
@@ -45,6 +48,40 @@ function extractYouTubeId(url: string) {
 function extractTikTokId(url: string) {
   const m = url.match(/\/video\/(\d+)/)
   return m ? m[1] : null
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string; productId: string }>
+}): Promise<Metadata> {
+  const supabase = await createClient()
+  const { slug, productId } = await params
+
+  const { data: store } = await supabase
+    .from("reseller_stores")
+    .select("name,headline,reseller_id,visual_settings")
+    .eq("slug", slug)
+    .eq("is_published", true)
+    .maybeSingle()
+
+  if (!store) return {}
+
+  const { data: rp } = await supabase
+    .from("reseller_products")
+    .select("product:products(name,description)")
+    .eq("reseller_id", store.reseller_id)
+    .eq("product_id", productId)
+    .eq("is_active", true)
+    .maybeSingle()
+
+  const product = rp && typeof rp === "object" && "product" in rp ? (rp as { product?: { name?: string; description?: string | null } }).product : null
+  const visual = normalizeVisualSettings((store as { visual_settings?: unknown }).visual_settings)
+
+  const title = product?.name ? `${product.name} | ${store.name}` : store.name
+  const description = (product?.description || visual.seo.meta_description || store.headline || undefined) ?? undefined
+
+  return { title, description }
 }
 
 export default async function StorefrontProductPage({

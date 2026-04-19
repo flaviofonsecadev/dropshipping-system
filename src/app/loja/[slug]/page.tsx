@@ -4,6 +4,8 @@ import { createClient } from "@/utils/supabase/server"
 import type { CSSProperties } from "react"
 import { BuyButton } from "./produto/[productId]/buy-button"
 import { normalizeStorefrontSettings } from "@/lib/storefront-settings"
+import { normalizeVisualSettings } from "@/lib/visual-settings"
+import type { Metadata } from "next"
 
 type StorefrontStore = {
   reseller_id: string
@@ -17,6 +19,7 @@ type StorefrontStore = {
   headline: string | null
   about: string | null
   storefront_settings?: unknown
+  visual_settings?: unknown
 }
 
 type StorefrontProduct = {
@@ -41,6 +44,40 @@ function formatBRL(value: number) {
 function buildSearchHref(slug: string, q: string) {
   const query = q ? `?q=${encodeURIComponent(q)}` : ""
   return `/loja/${slug}${query}`
+}
+
+function parseKeywords(input: string | null) {
+  if (!input) return undefined
+  const parts = input
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean)
+  return parts.length ? parts : undefined
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const supabase = await createClient()
+  const { slug } = await params
+
+  const { data: store } = await supabase
+    .from("reseller_stores")
+    .select("name,headline,visual_settings")
+    .eq("slug", slug)
+    .eq("is_published", true)
+    .maybeSingle()
+
+  if (!store) return {}
+
+  const visual = normalizeVisualSettings((store as { visual_settings?: unknown }).visual_settings)
+  const title = visual.seo.meta_title || store.name
+  const description = visual.seo.meta_description || store.headline || undefined
+  const keywords = parseKeywords(visual.seo.meta_keywords)
+
+  return { title, description, keywords }
 }
 
 function IconUser(props: { className?: string }) {
@@ -107,6 +144,7 @@ export default async function StorefrontPage({
 
   const storeTyped = store as StorefrontStore
   const settings = normalizeStorefrontSettings(storeTyped.storefront_settings)
+  const visual = normalizeVisualSettings(storeTyped.visual_settings)
   const typedItems = (items ?? []) as unknown as ResellerProductRow[]
 
   const products = typedItems
@@ -140,6 +178,9 @@ export default async function StorefrontPage({
     q || !settings.sections.best_sellers_enabled
       ? []
       : products.slice(settings.sections.launches_count, settings.sections.launches_count + settings.sections.best_sellers_count)
+
+  const heroItems = visual.hero.items.filter((i) => i.enabled)
+  const promoItems = visual.promos.items.filter((i) => i.enabled)
 
   return (
     <div className="min-h-screen bg-white text-zinc-900" style={cssVars}>
@@ -228,13 +269,45 @@ export default async function StorefrontPage({
           </div>
         </div>
 
-        {storeTyped.banner_url && (
+        {heroItems.length > 0 ? (
+          <div className="max-w-6xl mx-auto px-4 pb-4">
+            <div className="rounded-xl overflow-hidden border border-zinc-200 bg-zinc-50">
+              <div className="flex overflow-x-auto snap-x snap-mandatory">
+                {heroItems.map((b) => {
+                  const href = b.link_url
+                  const isExternal = href ? href.startsWith("http://") || href.startsWith("https://") : false
+                  const inner = (
+                    <div className="h-40 md:h-56">
+                      <img src={b.image_url} alt={b.title ?? storeTyped.name} className="h-full w-full object-cover" />
+                    </div>
+                  )
+                  if (!href) {
+                    return (
+                      <div key={b.id} className="snap-start shrink-0 w-full">
+                        {inner}
+                      </div>
+                    )
+                  }
+                  return isExternal ? (
+                    <a key={b.id} href={href} target="_blank" rel="noopener noreferrer" className="snap-start shrink-0 w-full block">
+                      {inner}
+                    </a>
+                  ) : (
+                    <Link key={b.id} href={href} className="snap-start shrink-0 w-full block">
+                      {inner}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        ) : storeTyped.banner_url ? (
           <div className="max-w-6xl mx-auto px-4 pb-4">
             <div className="h-40 md:h-56 rounded-xl overflow-hidden border border-zinc-200 bg-zinc-50">
               <img src={storeTyped.banner_url} alt="Banner" className="h-full w-full object-cover" />
             </div>
           </div>
-        )}
+        ) : null}
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-10">
@@ -304,6 +377,30 @@ export default async function StorefrontPage({
             </div>
           )}
         </section>
+
+        {!q && promoItems.length > 0 && (
+          <section className="space-y-4">
+            {promoItems.map((b) => {
+              const href = b.link_url
+              const isExternal = href ? href.startsWith("http://") || href.startsWith("https://") : false
+              const img = (
+                <div className="h-32 md:h-44 border border-zinc-200 bg-zinc-50 overflow-hidden rounded-lg">
+                  <img src={b.image_url} alt={b.title ?? storeTyped.name} className="h-full w-full object-cover" />
+                </div>
+              )
+              if (!href) return <div key={b.id}>{img}</div>
+              return isExternal ? (
+                <a key={b.id} href={href} target="_blank" rel="noopener noreferrer" className="block">
+                  {img}
+                </a>
+              ) : (
+                <Link key={b.id} href={href} className="block">
+                  {img}
+                </Link>
+              )
+            })}
+          </section>
+        )}
 
         {!q && maisVendidos.length > 0 && (
           <section className="space-y-6">

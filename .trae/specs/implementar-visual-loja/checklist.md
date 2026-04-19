@@ -1,0 +1,9 @@
+- [x] Existe `visual_settings` em `reseller_stores` com default seguro e migration aplicada.
+- [x] Tela `/reseller/settings/visual` carrega dados reais da loja do revendedor.
+- [x] Tela `/reseller/settings/visual` salva `visual_settings` e atualiza `storefront_settings.sections` sem sobrescrever outras chaves.
+- [x] Hero Slider (CRUD + reorder + enable/disable) funciona e reflete em `/loja/[slug]`.
+- [x] Banners promocionais (CRUD + reorder + enable/disable) funcionam e refletem em `/loja/[slug]`.
+- [x] Seções (títulos/quantidades/toggle) refletem em `/loja/[slug]`.
+- [x] SEO (meta title/description) aplica metadata em `/loja/[slug]` (com fallback).
+- [x] Layout funciona bem em desktop e mobile (sem overflow; CTAs acessíveis).
+- [x] `npm run build` passa.
