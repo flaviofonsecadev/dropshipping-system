@@ -1,0 +1,8 @@
+- [x] Existe `storefront_settings` em `reseller_stores` com defaults seguros (lojas antigas não quebram).
+- [x] Painel `/reseller/store/settings` possui seção “Layout da Vitrine” com campos definidos na spec.
+- [x] Salvar no painel persiste `storefront_settings` via Server Action.
+- [x] `/loja/[slug]` usa `storefront_settings` para topbar, labels, títulos, toggles e quantidades.
+- [x] `/loja/[slug]` mantém busca por `?q=` filtrando nome/SKU.
+- [x] `/loja/[slug]/produto/[productId]` usa `storefront_settings` para topbar/header e labels.
+- [x] Layout funciona bem em desktop e mobile (sem overflow horizontal; CTAs fáceis de tocar).
+- [x] `npm run build` passa.

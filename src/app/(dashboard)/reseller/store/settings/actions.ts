@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { isValidExternalUrl, normalizeStorefrontSettings } from '@/lib/storefront-settings'
 
 function toKebabCase(input: string) {
   return input
@@ -53,6 +54,22 @@ export async function upsertResellerStoreAction(formData: FormData) {
   const about = String(formData.get('about') ?? '').trim() || null
   const is_published = String(formData.get('is_published') ?? '') === 'true'
 
+  let storefront_settings = normalizeStorefrontSettings(null)
+  const rawSettings = formData.get('storefront_settings')
+  if (typeof rawSettings === 'string' && rawSettings.trim()) {
+    try {
+      storefront_settings = normalizeStorefrontSettings(JSON.parse(rawSettings))
+    } catch {
+      redirect('/reseller/store/settings?error=invalid_storefront_settings')
+    }
+  }
+
+  if (storefront_settings.topbar.enabled && storefront_settings.topbar.contact_target === 'external') {
+    if (!storefront_settings.topbar.contact_url || !isValidExternalUrl(storefront_settings.topbar.contact_url)) {
+      redirect('/reseller/store/settings?error=invalid_contact_url')
+    }
+  }
+
   const { error } = await supabase
     .from('reseller_stores')
     .upsert(
@@ -67,6 +84,7 @@ export async function upsertResellerStoreAction(formData: FormData) {
         accent_color,
         headline,
         about,
+        storefront_settings,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'reseller_id' }

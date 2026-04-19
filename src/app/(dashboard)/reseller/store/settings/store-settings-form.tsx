@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/utils/supabase/client"
 import { upsertResellerStoreAction } from "./actions"
 import Link from "next/link"
+import { Checkbox } from "@/components/ui/checkbox"
+import { isValidExternalUrl, normalizeStorefrontSettings } from "@/lib/storefront-settings"
 
 type ResellerStore = {
   reseller_id: string
@@ -21,6 +23,7 @@ type ResellerStore = {
   accent_color: string | null
   headline: string | null
   about: string | null
+  storefront_settings?: unknown
 }
 
 function slugify(input: string) {
@@ -54,6 +57,71 @@ export function StoreSettingsForm({
   const [bannerUrl, setBannerUrl] = useState(store?.banner_url ?? "")
   const [isPublished, setIsPublished] = useState(Boolean(store?.is_published))
 
+  const initialLayout = useMemo(() => normalizeStorefrontSettings(store?.storefront_settings), [store?.storefront_settings])
+
+  const [topbarEnabled, setTopbarEnabled] = useState<boolean>(initialLayout.topbar.enabled)
+  const [topbarMessage, setTopbarMessage] = useState<string>(initialLayout.topbar.message)
+  const [topbarHomeLabel, setTopbarHomeLabel] = useState<string>(initialLayout.topbar.home_label)
+  const [topbarContactLabel, setTopbarContactLabel] = useState<string>(initialLayout.topbar.contact_label)
+  const [topbarContactTarget, setTopbarContactTarget] = useState<"anchor" | "external">(initialLayout.topbar.contact_target)
+  const [topbarContactUrl, setTopbarContactUrl] = useState<string>(initialLayout.topbar.contact_url)
+
+  const [launchesTitle, setLaunchesTitle] = useState<string>(initialLayout.sections.launches_title)
+  const [bestSellersTitle, setBestSellersTitle] = useState<string>(initialLayout.sections.best_sellers_title)
+  const [launchesCount, setLaunchesCount] = useState<number>(initialLayout.sections.launches_count)
+  const [bestSellersEnabled, setBestSellersEnabled] = useState<boolean>(initialLayout.sections.best_sellers_enabled)
+  const [bestSellersCount, setBestSellersCount] = useState<number>(initialLayout.sections.best_sellers_count)
+
+  const [showSizes, setShowSizes] = useState<boolean>(initialLayout.product_card.show_sizes)
+  const [sizesText, setSizesText] = useState<string>(initialLayout.product_card.sizes_text)
+  const [lookLabel, setLookLabel] = useState<string>(initialLayout.product_card.look_label)
+  const [buyLabel, setBuyLabel] = useState<string>(initialLayout.product_card.buy_label)
+
+  const [layoutError, setLayoutError] = useState<string | null>(null)
+
+  const storefrontSettingsJson = useMemo(() => {
+    const settings = normalizeStorefrontSettings({
+      topbar: {
+        enabled: topbarEnabled,
+        message: topbarMessage,
+        home_label: topbarHomeLabel,
+        contact_label: topbarContactLabel,
+        contact_target: topbarContactTarget,
+        contact_url: topbarContactUrl,
+      },
+      sections: {
+        launches_title: launchesTitle,
+        best_sellers_title: bestSellersTitle,
+        launches_count: launchesCount,
+        best_sellers_enabled: bestSellersEnabled,
+        best_sellers_count: bestSellersCount,
+      },
+      product_card: {
+        show_sizes: showSizes,
+        sizes_text: sizesText,
+        look_label: lookLabel,
+        buy_label: buyLabel,
+      },
+    })
+    return JSON.stringify(settings)
+  }, [
+    topbarEnabled,
+    topbarMessage,
+    topbarHomeLabel,
+    topbarContactLabel,
+    topbarContactTarget,
+    topbarContactUrl,
+    launchesTitle,
+    bestSellersTitle,
+    launchesCount,
+    bestSellersEnabled,
+    bestSellersCount,
+    showSizes,
+    sizesText,
+    lookLabel,
+    buyLabel,
+  ])
+
   const [uploading, setUploading] = useState<null | "logo" | "banner">(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
@@ -72,6 +140,8 @@ export function StoreSettingsForm({
     if (error === "missing_name") return "Informe o nome da loja."
     if (error === "missing_slug") return "Informe um slug válido."
     if (error === "slug_taken") return "Esse slug já está em uso. Escolha outro."
+    if (error === "invalid_storefront_settings") return "Layout da vitrine inválido. Revise os campos e tente novamente."
+    if (error === "invalid_contact_url") return "Informe uma URL externa válida (http/https) para o Fale conosco."
     if (error === "save_failed") return "Não foi possível salvar. Tente novamente."
     return "Não foi possível salvar. Tente novamente."
   }, [error])
@@ -148,7 +218,36 @@ export function StoreSettingsForm({
         </div>
       )}
 
-      <form action={upsertResellerStoreAction} className="grid grid-cols-1 gap-6">
+      <form
+        action={upsertResellerStoreAction}
+        className="grid grid-cols-1 gap-6"
+        onSubmit={(e) => {
+          setLayoutError(null)
+          if (!launchesTitle.trim()) {
+            e.preventDefault()
+            setLayoutError("Informe o título de LANÇAMENTOS.")
+            return
+          }
+          if (!lookLabel.trim()) {
+            e.preventDefault()
+            setLayoutError("Informe o label do CTA “Olhar”.")
+            return
+          }
+          if (!buyLabel.trim()) {
+            e.preventDefault()
+            setLayoutError("Informe o label do CTA “Comprar”.")
+            return
+          }
+          if (topbarEnabled && topbarContactTarget === "external") {
+            const url = topbarContactUrl.trim()
+            if (!url || !isValidExternalUrl(url)) {
+              e.preventDefault()
+              setLayoutError("Informe uma URL externa válida (http/https) para o Fale conosco.")
+            }
+          }
+        }}
+      >
+        <input type="hidden" name="storefront_settings" value={storefrontSettingsJson} />
         <Card>
           <CardHeader>
             <CardTitle>Identidade</CardTitle>
@@ -272,6 +371,169 @@ export function StoreSettingsForm({
                   value={accentColor}
                   onChange={(e) => setAccentColor(e.target.value)}
                 />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Layout da Vitrine</CardTitle>
+            <CardDescription>Controle topbar, títulos, seções e CTAs exibidos na loja pública.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            {layoutError && (
+              <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600" role="alert" aria-live="polite">
+                {layoutError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="text-sm font-semibold">Topbar</div>
+              <div className="flex items-center gap-3">
+                <Checkbox checked={topbarEnabled} onCheckedChange={(v) => setTopbarEnabled(Boolean(v))} />
+                <span className="text-sm">Exibir topbar</span>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="topbar_message">Mensagem</Label>
+                <Input
+                  id="topbar_message"
+                  value={topbarMessage}
+                  onChange={(e) => setTopbarMessage(e.target.value)}
+                  disabled={!topbarEnabled}
+                  placeholder="Entrega em todo o Brasil • Compre com segurança"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="topbar_home_label">Label do link “Home”</Label>
+                  <Input
+                    id="topbar_home_label"
+                    value={topbarHomeLabel}
+                    onChange={(e) => setTopbarHomeLabel(e.target.value)}
+                    disabled={!topbarEnabled}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="topbar_contact_label">Label do link “Fale conosco”</Label>
+                  <Input
+                    id="topbar_contact_label"
+                    value={topbarContactLabel}
+                    onChange={(e) => setTopbarContactLabel(e.target.value)}
+                    disabled={!topbarEnabled}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="topbar_contact_target">Destino do “Fale conosco”</Label>
+                  <select
+                    id="topbar_contact_target"
+                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                    value={topbarContactTarget}
+                    onChange={(e) => setTopbarContactTarget(e.target.value === "external" ? "external" : "anchor")}
+                    disabled={!topbarEnabled}
+                  >
+                    <option value="anchor">Âncora (#contato)</option>
+                    <option value="external">URL externa</option>
+                  </select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="topbar_contact_url">URL externa</Label>
+                  <Input
+                    id="topbar_contact_url"
+                    value={topbarContactUrl}
+                    onChange={(e) => setTopbarContactUrl(e.target.value)}
+                    disabled={!topbarEnabled || topbarContactTarget !== "external"}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-sm font-semibold">Seções</div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="launches_title">Título “LANÇAMENTOS”</Label>
+                  <Input id="launches_title" value={launchesTitle} onChange={(e) => setLaunchesTitle(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="launches_count">Quantidade em “LANÇAMENTOS”</Label>
+                  <Input
+                    id="launches_count"
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={launchesCount}
+                    onChange={(e) => setLaunchesCount(Math.min(Math.max(Number(e.target.value || "8"), 1), 24))}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Checkbox checked={bestSellersEnabled} onCheckedChange={(v) => setBestSellersEnabled(Boolean(v))} />
+                <span className="text-sm">Exibir “MAIS VENDIDOS”</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="best_sellers_title">Título “MAIS VENDIDOS”</Label>
+                  <Input
+                    id="best_sellers_title"
+                    value={bestSellersTitle}
+                    onChange={(e) => setBestSellersTitle(e.target.value)}
+                    disabled={!bestSellersEnabled}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="best_sellers_count">Quantidade em “MAIS VENDIDOS”</Label>
+                  <Input
+                    id="best_sellers_count"
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={bestSellersCount}
+                    onChange={(e) => setBestSellersCount(Math.min(Math.max(Number(e.target.value || "8"), 1), 24))}
+                    disabled={!bestSellersEnabled}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-sm font-semibold">Card do Produto</div>
+
+              <div className="flex items-center gap-3">
+                <Checkbox checked={showSizes} onCheckedChange={(v) => setShowSizes(Boolean(v))} />
+                <span className="text-sm">Exibir linha de tamanhos</span>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="sizes_text">Texto da linha de tamanhos</Label>
+                <Input
+                  id="sizes_text"
+                  value={sizesText}
+                  onChange={(e) => setSizesText(e.target.value)}
+                  disabled={!showSizes}
+                  placeholder="P  M  G  GG"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="look_label">Label do CTA “Olhar”</Label>
+                  <Input id="look_label" value={lookLabel} onChange={(e) => setLookLabel(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="buy_label">Label do CTA “Comprar”</Label>
+                  <Input id="buy_label" value={buyLabel} onChange={(e) => setBuyLabel(e.target.value)} />
+                </div>
               </div>
             </div>
           </CardContent>

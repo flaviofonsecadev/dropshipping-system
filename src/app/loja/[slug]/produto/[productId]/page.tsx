@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { BuyButton } from "./buy-button"
 import type { CSSProperties } from "react"
+import { normalizeStorefrontSettings } from "@/lib/storefront-settings"
 
 type StorefrontStore = {
   reseller_id: string
@@ -11,6 +12,9 @@ type StorefrontStore = {
   is_published: boolean
   primary_color: string | null
   accent_color: string | null
+  logo_url: string | null
+  headline: string | null
+  storefront_settings?: unknown
 }
 
 type StorefrontProduct = {
@@ -24,10 +28,10 @@ type StorefrontProduct = {
   suggested_margin: number
 }
 
-type ResellerProductWithProduct = {
+type ResellerProductRow = {
   custom_margin: number | null
   is_active: boolean
-  product: StorefrontProduct | null
+  product: StorefrontProduct | StorefrontProduct[] | null
 }
 
 function formatBRL(value: number) {
@@ -45,11 +49,15 @@ function extractTikTokId(url: string) {
 
 export default async function StorefrontProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string; productId: string }>
+  searchParams?: Promise<{ q?: string; img?: string }>
 }) {
   const supabase = await createClient()
   const { slug, productId } = await params
+  const sp = (await searchParams) ?? {}
+  const q = (sp.q ?? "").trim()
 
   const { data: store } = await supabase
     .from("reseller_stores")
@@ -75,7 +83,8 @@ export default async function StorefrontProductPage({
   }
 
   const storeTyped = store as StorefrontStore
-  const rpTyped = rp as any
+  const settings = normalizeStorefrontSettings(storeTyped.storefront_settings)
+  const rpTyped = rp as unknown as ResellerProductRow
   const rawProduct = Array.isArray(rpTyped.product) ? rpTyped.product[0] : rpTyped.product
   const product = rawProduct as StorefrontProduct
   const images: string[] = Array.isArray(product.images) ? product.images : []
@@ -101,52 +110,121 @@ export default async function StorefrontProductPage({
   const youTubeId = videoUrl && (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")) ? extractYouTubeId(videoUrl) : null
   const tikTokId = videoUrl && videoUrl.includes("tiktok.com") ? extractTikTokId(videoUrl) : null
 
+  const imgIndexRaw = Number(sp.img ?? "0")
+  const imgIndex = Number.isFinite(imgIndexRaw) ? Math.min(Math.max(imgIndexRaw, 0), Math.max(images.length - 1, 0)) : 0
+  const mainImage = images[imgIndex] || images[0] || null
+
+  const homeHref = `/loja/${storeTyped.slug}${q ? `?q=${encodeURIComponent(q)}` : ""}`
+  const contactHref =
+    settings.topbar.contact_target === "external" && settings.topbar.contact_url
+      ? settings.topbar.contact_url
+      : `${homeHref}#contato`
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50" style={cssVars}>
-      <header className="border-b border-white/10 bg-black/60 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between gap-4">
-          <Link href={`/loja/${storeTyped.slug}`} className="text-sm text-zinc-300 hover:text-white">
-            ← Voltar para {storeTyped.name}
+    <div className="min-h-screen bg-white text-zinc-900" style={cssVars}>
+      {settings.topbar.enabled && (
+        <div className="border-b border-zinc-200 bg-white">
+          <div className="max-w-6xl mx-auto px-4 py-2 text-xs text-zinc-600 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link href={homeHref} className="hover:text-zinc-900">
+                {settings.topbar.home_label}
+              </Link>
+              {settings.topbar.contact_target === "external" ? (
+                <a href={contactHref} target="_blank" rel="noopener noreferrer" className="hover:text-zinc-900">
+                  {settings.topbar.contact_label}
+                </a>
+              ) : (
+                <a href={contactHref} className="hover:text-zinc-900">
+                  {settings.topbar.contact_label}
+                </a>
+              )}
+            </div>
+            <div className="hidden sm:block">{settings.topbar.message}</div>
+          </div>
+        </div>
+      )}
+
+      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-4">
+          <Link href={`/loja/${storeTyped.slug}${q ? `?q=${encodeURIComponent(q)}` : ""}`} className="flex items-center gap-3 min-w-0">
+            {storeTyped.logo_url ? (
+              <img src={storeTyped.logo_url} alt={storeTyped.name} className="h-10 w-10 rounded-lg object-cover border border-zinc-200" />
+            ) : (
+              <div className="h-10 w-10 rounded-lg bg-zinc-100 border border-zinc-200" />
+            )}
+            <div className="min-w-0 leading-tight hidden sm:block">
+              <div className="text-lg font-bold truncate">{storeTyped.name}</div>
+              {storeTyped.headline && <div className="text-sm text-zinc-600 truncate">{storeTyped.headline}</div>}
+            </div>
           </Link>
-          <div className="text-sm font-semibold" style={{ color: "var(--store-accent)" }}>
-            R$ {formatBRL(price)}
+
+          <form action={`/loja/${storeTyped.slug}`} method="get" className="flex-1 max-w-xl">
+            <div className="relative">
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="O que você está procurando?"
+                className="w-full h-11 rounded-full border border-zinc-200 bg-white px-4 pr-12 text-sm outline-none focus:border-zinc-400"
+              />
+              <button
+                type="submit"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full border border-zinc-200 bg-white flex items-center justify-center"
+                aria-label="Pesquisar"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-5 w-5" aria-hidden="true">
+                  <path strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
+                  <path strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.3-4.3" />
+                </svg>
+              </button>
+            </div>
+          </form>
+
+          <div className="hidden sm:flex items-center gap-2">
+            <Link href={`/loja/${storeTyped.slug}${q ? `?q=${encodeURIComponent(q)}` : ""}`} className="text-sm text-zinc-700 hover:text-zinc-900">
+              Voltar
+            </Link>
+            <div className="text-sm font-semibold">R$ {formatBRL(price)}</div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <main className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-10">
         <div className="space-y-4">
-          <div className="aspect-square rounded-xl overflow-hidden border border-white/10 bg-black/40">
-            {images[0] ? <img src={images[0]} alt={product.name} className="h-full w-full object-cover" /> : <div className="h-full w-full" />}
+          <div className="aspect-square border border-zinc-200 bg-zinc-50">
+            {mainImage ? <img src={mainImage} alt={product.name} className="h-full w-full object-cover" /> : <div className="h-full w-full" />}
           </div>
 
           {images.length > 1 && (
             <div className="grid grid-cols-5 gap-2">
-              {images.slice(1, 6).map((img, idx) => (
-                <div key={idx} className="aspect-square rounded-md overflow-hidden border border-white/10 bg-black/40">
-                  <img src={img} alt={`Foto ${idx + 2}`} className="h-full w-full object-cover" />
-                </div>
+              {images.slice(0, 10).map((img, idx) => (
+                <Link
+                  key={img + idx}
+                  href={`/loja/${storeTyped.slug}/produto/${product.id}?img=${idx}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                  className={[
+                    "aspect-square border border-zinc-200 bg-zinc-50 overflow-hidden",
+                    idx === imgIndex ? "ring-2 ring-offset-2 ring-offset-white" : "",
+                  ].join(" ")}
+                  style={idx === imgIndex ? ({ ["--tw-ring-color"]: "var(--store-accent)" } as unknown as CSSProperties) : undefined}
+                  aria-label={`Selecionar imagem ${idx + 1}`}
+                >
+                  <img src={img} alt={`Foto ${idx + 1}`} className="h-full w-full object-cover" />
+                </Link>
               ))}
             </div>
           )}
 
           {videoUrl && (
-            <div className="rounded-xl border border-white/10 bg-black/40 overflow-hidden">
+            <div className="border border-zinc-200 bg-white overflow-hidden">
               {youTubeId ? (
                 <iframe
                   className="w-full aspect-video"
                   src={`https://www.youtube.com/embed/${youTubeId}`}
-                  title="YouTube video player"
+                  title="Vídeo do produto"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
               ) : tikTokId ? (
-                <iframe
-                  className="w-full aspect-[9/16] max-h-[680px]"
-                  src={`https://www.tiktok.com/embed/v2/${tikTokId}`}
-                  allow="encrypted-media;"
-                  allowFullScreen
-                />
+                <iframe className="w-full aspect-[9/16] max-h-[680px]" src={`https://www.tiktok.com/embed/v2/${tikTokId}`} allow="encrypted-media;" allowFullScreen />
               ) : (
                 <video className="w-full aspect-video" controls>
                   <source src={videoUrl} />
@@ -157,25 +235,40 @@ export default async function StorefrontProductPage({
         </div>
 
         <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{product.name}</h1>
-            <p className="text-sm text-zinc-400 mt-1">SKU: {product.sku}</p>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold tracking-tight">{product.name}</h1>
+            <p className="text-sm text-zinc-600">SKU: {product.sku}</p>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/5 p-6 space-y-4">
-            <div className="text-sm text-zinc-300">Preço</div>
-            <div className="text-4xl font-bold" style={{ color: "var(--store-accent)" }}>
-              R$ {formatBRL(price)}
+          <div id="comprar" className="border border-zinc-200 bg-white p-6 space-y-4">
+            <div className="text-center space-y-2">
+              <div className="text-4xl font-semibold">R$ {formatBRL(price)}</div>
+              <div className="text-xs text-zinc-600">
+                <div>1x de R$ {formatBRL(price)}</div>
+                <div>R$ {formatBRL(price)} com PIX</div>
+              </div>
             </div>
-            <div className="text-sm text-zinc-400">
-              Frete calculado no checkout.
-            </div>
-            <BuyButton resellerId={store.reseller_id} storeSlug={store.slug} items={items} />
+
+            <div className="text-sm text-zinc-600">Frete calculado no checkout.</div>
+            <BuyButton
+              resellerId={store.reseller_id}
+              storeSlug={store.slug}
+              items={items}
+              className="w-full h-12 text-base font-semibold rounded-none"
+              label={settings.product_card.buy_label}
+            />
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+          <div className="border border-zinc-200 bg-white p-6">
             <h2 className="font-semibold mb-2">Descrição</h2>
-            <p className="text-zinc-300 whitespace-pre-wrap">{product.description || "Sem descrição."}</p>
+            <p className="text-zinc-700 whitespace-pre-wrap">{product.description || "Sem descrição."}</p>
+          </div>
+
+          <div className="sm:hidden border border-zinc-200 bg-white p-4 flex items-center justify-between">
+            <Link href={`/loja/${storeTyped.slug}${q ? `?q=${encodeURIComponent(q)}` : ""}`} className="text-sm text-zinc-700">
+              Voltar
+            </Link>
+            <div className="text-sm font-semibold">R$ {formatBRL(price)}</div>
           </div>
         </div>
       </main>

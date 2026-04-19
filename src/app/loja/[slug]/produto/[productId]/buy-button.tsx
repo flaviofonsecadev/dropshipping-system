@@ -8,10 +8,16 @@ export function BuyButton({
   resellerId,
   storeSlug,
   items,
+  compact = false,
+  className,
+  label,
 }: {
   resellerId: string
   storeSlug: string
   items: Array<{ product_id: string; qty: number; base_cost: number; reseller_margin: number }>
+  compact?: boolean
+  className?: string
+  label?: string
 }) {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -50,23 +56,18 @@ export function BuyButton({
   }
 
   return (
-    <div className="space-y-3">
+    <div className={compact ? "space-y-2" : "space-y-3"}>
       {(() => {
         const style = { backgroundColor: "var(--store-accent)" } as CSSProperties
+        const baseClassName = compact ? "h-10 px-4 text-sm font-semibold text-black" : "w-full h-12 text-base font-semibold text-black"
         return (
-      <Button
-        type="button"
-        onClick={handleBuy}
-        disabled={isLoading}
-        className="w-full h-12 text-base font-semibold text-black"
-        style={style}
-      >
-        {isLoading ? "Processando..." : "Comprar"}
-      </Button>
+          <Button type="button" onClick={handleBuy} disabled={isLoading} className={[baseClassName, className ?? ""].join(" ")} style={style}>
+            {isLoading ? "Processando..." : label ?? "Comprar"}
+          </Button>
         )
       })()}
       {message && (
-        <p className="text-sm text-zinc-300" role="status" aria-live="polite">
+        <p className={compact ? "text-xs text-zinc-600" : "text-sm text-zinc-600"} role="status" aria-live="polite">
           {message}
         </p>
       )}

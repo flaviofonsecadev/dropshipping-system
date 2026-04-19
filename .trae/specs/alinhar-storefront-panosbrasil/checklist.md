@@ -1,0 +1,9 @@
+- [x] `/loja/[slug]` usa tema claro e hierarquia visual de e-commerce (similar à referência).
+- [x] Header do storefront inclui: logo (quando existir), busca central via submit e ícones à direita (sem quebrar navegação).
+- [x] Existe topbar simples com links utilitários (não dependem de login).
+- [x] Lista de produtos exibe cards com: imagem, nome centralizado/caixa alta, preço em destaque, textos secundários e CTAs “Olhar” e “Comprar”.
+- [x] Busca filtra por nome ou SKU (case-insensitive) via querystring.
+- [x] `/loja/[slug]/produto/[productId]` exibe galeria, título, SKU, preço e CTA “Comprar” com layout de e-commerce.
+- [x] Em mobile: header fica compacto; grid se adapta; CTAs são fáceis de tocar; não há overflow horizontal.
+- [x] Fluxo de compra existente continua funcionando (sem regressão).
+- [x] `npm run build` passa.
