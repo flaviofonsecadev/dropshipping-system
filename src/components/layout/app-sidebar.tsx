@@ -22,6 +22,7 @@ import {
   LogOut,
   User,
   Crown,
+  CreditCard,
 } from "lucide-react"
 import Link from "next/link"
 import { logoutAction } from "@/app/login/actions"
@@ -43,6 +44,12 @@ const allNavItems = [
     title: "Pedidos",
     url: "/supplier/orders",
     icon: ShoppingCart,
+    roles: ["supplier", "admin"],
+  },
+  {
+    title: "Pagamentos",
+    url: "/supplier/settings/pagamentos",
+    icon: CreditCard,
     roles: ["supplier", "admin"],
   },
   {
@@ -79,6 +86,12 @@ const allNavItems = [
     title: "Visual",
     url: "/reseller/settings/visual",
     icon: Palette,
+    roles: ["reseller", "admin"],
+  },
+  {
+    title: "Pagamentos",
+    url: "/reseller/settings/pagamentos",
+    icon: CreditCard,
     roles: ["reseller", "admin"],
   },
 ]

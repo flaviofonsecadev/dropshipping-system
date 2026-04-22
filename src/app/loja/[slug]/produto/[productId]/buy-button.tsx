@@ -26,6 +26,70 @@ export function BuyButton({
     setIsLoading(true)
     setMessage(null)
     try {
+      const name = window.prompt("Nome completo:")
+      if (!name) {
+        setIsLoading(false)
+        return
+      }
+      const cpf = window.prompt("CPF/CNPJ:")
+      if (!cpf) {
+        setIsLoading(false)
+        return
+      }
+      const email = window.prompt("E-mail (opcional):") || ""
+
+      const cep = (window.prompt("CEP de entrega (somente números):") || "").replace(/\D/g, "")
+      if (!cep || cep.length !== 8) {
+        setIsLoading(false)
+        setMessage("CEP inválido.")
+        return
+      }
+
+      let shippingCost = 0
+      try {
+        const shipRes = await fetch("/api/checkout/shipping", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to_postal_code: cep,
+            items,
+          }),
+        })
+        const shipData = await shipRes.json()
+        if (!shipRes.ok) {
+          setIsLoading(false)
+          setMessage(shipData?.error || "Erro ao calcular frete.")
+          return
+        }
+        const options: Array<{ name: string; price: number; estimatedDays?: number }> = Array.isArray(shipData?.options) ? shipData.options : []
+        if (options.length === 0) {
+          setIsLoading(false)
+          setMessage("Nenhuma opção de frete disponível.")
+          return
+        }
+        const list = options.map((o, i) => `${i + 1}) ${o.name} - R$ ${o.price.toFixed(2).replace(".", ",")}${o.estimatedDays ? ` (${o.estimatedDays} dias)` : ""}`).join("\n")
+        const choiceRaw = window.prompt(`Escolha o frete:\n${list}\n\nDigite o número:`) || ""
+        const idx = Number(choiceRaw) - 1
+        if (!Number.isFinite(idx) || idx < 0 || idx >= options.length) {
+          setIsLoading(false)
+          setMessage("Frete não selecionado.")
+          return
+        }
+        shippingCost = Number(options[idx]!.price) || 0
+      } catch {
+        setIsLoading(false)
+        setMessage("Erro ao calcular frete.")
+        return
+      }
+
+      const pm = (window.prompt("Forma de pagamento: PIX ou CARTAO?") || "").trim().toLowerCase()
+      const payment_method = pm === "cartao" || pm === "card" ? "card" : "pix"
+      let installments = 1
+      if (payment_method === "card") {
+        const instRaw = Number(window.prompt("Parcelas no cartão (1 a 3):") || "1")
+        installments = Math.min(Math.max(Math.trunc(instRaw), 1), 3)
+      }
+
       const res = await fetch("/api/checkout/asaas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,10 +97,13 @@ export function BuyButton({
           reseller_id: resellerId,
           store_slug: storeSlug,
           items,
-          shipping_cost: 0,
+          shipping_cost: shippingCost,
           shipping_address: null,
-          reseller_wallet_id: "wallet_reseller_placeholder",
-          supplier_wallet_id: "wallet_supplier_placeholder",
+          customer_name: name,
+          customer_cpf: cpf,
+          customer_email: email || null,
+          payment_method,
+          installments,
         }),
       })
 
@@ -46,8 +113,10 @@ export function BuyButton({
         return
       }
 
-      setMessage("Checkout iniciado (simulado).")
-      console.log("Checkout payload/response:", data)
+      if (data?.invoiceUrl) {
+        window.open(data.invoiceUrl, "_blank", "noopener,noreferrer")
+      }
+      setMessage("Checkout iniciado.")
     } catch {
       setMessage("Não foi possível iniciar o checkout.")
     } finally {

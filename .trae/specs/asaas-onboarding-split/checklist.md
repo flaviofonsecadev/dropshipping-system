@@ -1,0 +1,7 @@
+- [x] Endpoints oficiais necessários do Asaas foram mapeados (walletId, subcontas, split).
+- [x] Dados do Asaas (walletId/accountId/apiKey criptografada) são persistidos com segurança e sem vazamento em UI/logs.
+- [x] Fornecedor consegue conectar/desconectar conta principal e ver status.
+- [x] Revendedor consegue criar subconta via plataforma e ver status.
+- [x] Revendedor consegue conectar conta existente via API key e ver status.
+- [x] Checkout cria cobrança no Asaas com split: custo+envio para fornecedor e lucro para revendedor.
+- [x] `npm run build` passa.
