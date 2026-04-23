@@ -16,6 +16,10 @@ export class AsaasError extends Error {
   }
 }
 
+function isUuid(v: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)
+}
+
 function parseWalletIdFromUnknown(data: unknown): string | null {
   if (data && typeof data === "object") {
     if ("walletId" in data && typeof (data as { walletId?: unknown }).walletId === "string") {
@@ -35,14 +39,24 @@ function parseWalletIdFromUnknown(data: unknown): string | null {
   return null
 }
 
+function parseAccountIdFromUnknown(data: unknown): string | null {
+  if (data && typeof data === "object") {
+    const maybeId =
+      ("accountId" in data && typeof (data as { accountId?: unknown }).accountId === "string" ? (data as { accountId: string }).accountId : null) ??
+      ("id" in data && typeof (data as { id?: unknown }).id === "string" ? (data as { id: string }).id : null)
+
+    if (maybeId && isUuid(maybeId)) return maybeId
+  }
+
+  return null
+}
+
 function getAsaasEnv(): AsaasEnv {
   const env = (process.env.ASAAS_ENV ?? "").toLowerCase()
   return env === "production" ? "production" : "sandbox"
 }
 
 function getAsaasBaseUrl(): string {
-  const override = process.env.ASAAS_BASE_URL?.trim()
-  if (override) return override.replace(/\/+$/, "")
   return getAsaasEnv() === "production" ? "https://api.asaas.com/v3" : "https://api-sandbox.asaas.com/v3"
 }
 
@@ -104,6 +118,28 @@ export async function retrieveWalletId(apiKey: string): Promise<string> {
 
   if (lastError instanceof AsaasError) throw lastError
   throw new AsaasError("Não foi possível obter o walletId no Asaas.", 500, "wallet_unknown_error", lastError)
+}
+
+export async function retrieveAccountId(apiKey: string): Promise<string | null> {
+  const paths = ["/myAccount/commercialInfo/", "/myAccount/commercialInfo", "/myAccount/status/", "/myAccount/status"]
+  let lastError: unknown = null
+
+  for (const p of paths) {
+    try {
+      const data = await asaasRequest<unknown>(apiKey, p, { method: "GET" })
+      const parsed = parseAccountIdFromUnknown(data)
+      if (parsed) return parsed
+      lastError = new AsaasError("Não foi possível obter o accountId no Asaas.", 500, "account_parse_error", data)
+    } catch (e) {
+      if (e instanceof AsaasError && (e.status === 401 || e.status === 403)) {
+        throw e
+      }
+      lastError = e
+    }
+  }
+
+  if (lastError instanceof AsaasError) return null
+  return null
 }
 
 export async function validateApiKey(apiKey: string): Promise<void> {

@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
-import { AsaasError, retrieveWalletId, validateApiKey } from "@/lib/asaas"
+import { AsaasError, retrieveAccountId, retrieveWalletId, validateApiKey } from "@/lib/asaas"
 import { encryptSecret } from "@/lib/secret"
 
 function hintFromApiKey(apiKey: string) {
@@ -34,6 +34,7 @@ export async function connectExistingResellerAsaasAction(formData: FormData) {
   try {
     await validateApiKey(apiKey)
     const walletId = walletIdInput && isUuid(walletIdInput) ? walletIdInput : await retrieveWalletId(apiKey)
+    const accountId = await retrieveAccountId(apiKey)
     const encrypted = encryptSecret(apiKey)
     const hint = hintFromApiKey(apiKey)
 
@@ -43,7 +44,7 @@ export async function connectExistingResellerAsaasAction(formData: FormData) {
         asaas_api_key_encrypted: encrypted,
         asaas_api_key_hint: hint,
         asaas_wallet_id: walletId,
-        asaas_account_id: null,
+        asaas_account_id: accountId,
         asaas_is_subaccount: false,
         asaas_connected_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
