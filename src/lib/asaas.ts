@@ -41,6 +41,8 @@ function getAsaasEnv(): AsaasEnv {
 }
 
 function getAsaasBaseUrl(): string {
+  const override = process.env.ASAAS_BASE_URL?.trim()
+  if (override) return override.replace(/\/+$/, "")
   return getAsaasEnv() === "production" ? "https://api.asaas.com/v3" : "https://api-sandbox.asaas.com/v3"
 }
 
@@ -83,7 +85,7 @@ async function asaasRequest<T>(apiKey: string, path: string, init?: RequestInit)
 }
 
 export async function retrieveWalletId(apiKey: string): Promise<string> {
-  const paths = ["/wallets/", "/myAccount/walletId", "/myAccount/walletId/"]
+  const paths = ["/myAccount/walletId/", "/myAccount/walletId", "/wallets/", "/wallets"]
   let lastError: unknown = null
 
   for (const p of paths) {
@@ -105,15 +107,23 @@ export async function retrieveWalletId(apiKey: string): Promise<string> {
 }
 
 export async function validateApiKey(apiKey: string): Promise<void> {
-  try {
-    await asaasRequest<unknown>(apiKey, "/myAccount/status/", { method: "GET" })
-  } catch (e) {
-    if (e instanceof AsaasError && e.status === 404) {
-      await asaasRequest<unknown>(apiKey, "/myAccount/accountNumber", { method: "GET" })
+  const paths = ["/myAccount/status/", "/myAccount/accountNumber/", "/myAccount/commercialInfo/"]
+  let lastError: unknown = null
+
+  for (const p of paths) {
+    try {
+      await asaasRequest<unknown>(apiKey, p, { method: "GET" })
       return
+    } catch (e) {
+      if (e instanceof AsaasError && (e.status === 401 || e.status === 403)) {
+        throw e
+      }
+      lastError = e
     }
-    throw e
   }
+
+  if (lastError instanceof AsaasError) throw lastError
+  throw new AsaasError("Erro na API do Asaas.", 500, "validate_unknown_error", lastError)
 }
 
 type CreateCustomerInput = {
