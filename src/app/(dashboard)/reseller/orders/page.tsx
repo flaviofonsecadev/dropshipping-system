@@ -3,51 +3,65 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, Eye, Filter, Download } from "lucide-react"
+import { createClient } from "@/utils/supabase/server"
+import { redirect } from "next/navigation"
 
-const orders = [
-  {
-    id: "ORD-9381",
-    customer: "João Silva",
-    date: "12 Abr 2026",
-    status: "Enviado",
-    total: "R$ 299,90",
-    payment: "PIX",
-  },
-  {
-    id: "ORD-9380",
-    customer: "Maria Santos",
-    date: "11 Abr 2026",
-    status: "Processando",
-    total: "R$ 149,90",
-    payment: "Cartão",
-  },
-  {
-    id: "ORD-9379",
-    customer: "Pedro Oliveira",
-    date: "10 Abr 2026",
-    status: "Entregue",
-    total: "R$ 89,90",
-    payment: "PIX",
-  },
-  {
-    id: "ORD-9378",
-    customer: "Ana Costa",
-    date: "09 Abr 2026",
-    status: "Cancelado",
-    total: "R$ 450,00",
-    payment: "Boleto",
-  },
-  {
-    id: "ORD-9377",
-    customer: "Lucas Mendes",
-    date: "08 Abr 2026",
-    status: "Entregue",
-    total: "R$ 120,50",
-    payment: "Cartão",
-  },
-]
+type ResellerOrderRow = {
+  id: string
+  customer_name: string | null
+  created_at: string
+  payment_method: string | null
+  total_amount: number | null
+  status: string | null
+}
 
-export default function ResellerOrdersPage() {
+function formatOrderDate(value: string) {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" }).format(d)
+}
+
+function formatBRL(value: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-"
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+}
+
+function getStatusBadgeVariant(status: string | null) {
+  const normalized = (status ?? "").toLowerCase()
+  if (!normalized) return "outline" as const
+  if (normalized.includes("cancel")) return "destructive" as const
+  if (normalized.includes("entreg")) return "default" as const
+  if (normalized.includes("envi")) return "secondary" as const
+  if (normalized.includes("pago") || normalized.includes("aprov")) return "default" as const
+  return "outline" as const
+}
+
+function getStatusBadgeClassName(status: string | null) {
+  const normalized = (status ?? "").toLowerCase()
+  if (normalized.includes("entreg") || normalized.includes("pago") || normalized.includes("aprov")) {
+    return "bg-green-500 hover:bg-green-600 text-white"
+  }
+  return ""
+}
+
+export default async function ResellerOrdersPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  const { data: orders, error } = await supabase
+    .from("orders")
+    .select("id,customer_name,created_at,payment_method,total_amount,status")
+    .eq("reseller_id", user.id)
+    .order("created_at", { ascending: false })
+
+  const rows: ResellerOrderRow[] = (orders ?? []) as ResellerOrderRow[]
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
@@ -91,32 +105,42 @@ export default function ResellerOrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell className="font-medium">{order.id}</TableCell>
-                <TableCell>{order.customer}</TableCell>
-                <TableCell>{order.date}</TableCell>
-                <TableCell>{order.payment}</TableCell>
-                <TableCell>{order.total}</TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={
-                      order.status === "Entregue" ? "default" :
-                      order.status === "Enviado" ? "secondary" :
-                      order.status === "Cancelado" ? "destructive" : "outline"
-                    }
-                    className={order.status === "Entregue" ? "bg-green-500 hover:bg-green-600 text-white" : ""}
-                  >
-                    {order.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" title="Ver detalhes">
-                    <Eye className="h-4 w-4" />
-                  </Button>
+            {error ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                  Não foi possível carregar seus pedidos no momento.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                  Você ainda não possui pedidos.
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium">{order.id}</TableCell>
+                  <TableCell>{order.customer_name ?? "-"}</TableCell>
+                  <TableCell>{formatOrderDate(order.created_at)}</TableCell>
+                  <TableCell>{order.payment_method ?? "-"}</TableCell>
+                  <TableCell>{formatBRL(order.total_amount)}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={getStatusBadgeVariant(order.status)}
+                      className={getStatusBadgeClassName(order.status)}
+                    >
+                      {order.status ?? "-"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" title="Ver detalhes">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

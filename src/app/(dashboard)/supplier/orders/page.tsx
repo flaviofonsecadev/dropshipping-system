@@ -9,47 +9,97 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Download, MoreHorizontal } from "lucide-react"
+import { createAdminClient, createClient } from "@/utils/supabase/server"
+import { redirect } from "next/navigation"
 
-const orders = [
-  {
-    id: "ORD-7352",
-    customer: "Maria Oliveira",
-    reseller: "Parceiro A",
-    date: "24/10/2023",
-    total: "R$ 350,00",
-    status: "Processando",
-    payment: "Aprovado",
-  },
-  {
-    id: "ORD-7351",
-    customer: "Carlos Mendes",
-    reseller: "Parceiro B",
-    date: "23/10/2023",
-    total: "R$ 1.200,00",
-    status: "Enviado",
-    payment: "Aprovado",
-  },
-  {
-    id: "ORD-7350",
-    customer: "Fernanda Costa",
-    reseller: "Parceiro C",
-    date: "22/10/2023",
-    total: "R$ 89,90",
-    status: "Pendente",
-    payment: "Aguardando",
-  },
-  {
-    id: "ORD-7349",
-    customer: "Lucas Silva",
-    reseller: "Parceiro A",
-    date: "20/10/2023",
-    total: "R$ 499,90",
-    status: "Entregue",
-    payment: "Aprovado",
-  },
-]
+type SupplierOrderRow = {
+  id: string
+  reseller_id: string | null
+  customer_name: string | null
+  created_at: string
+  payment_method: string | null
+  total_amount: number | null
+  status: string | null
+}
 
-export default function SupplierOrdersPage() {
+type ProfileLookupRow = {
+  id: string
+  full_name: string | null
+  email: string | null
+}
+
+function formatOrderDate(value: string) {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric" }).format(d)
+}
+
+function formatBRL(value: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-"
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+}
+
+function getStatusBadgeVariant(status: string | null) {
+  const normalized = (status ?? "").toLowerCase()
+  if (!normalized) return "outline" as const
+  if (normalized.includes("cancel")) return "destructive" as const
+  if (normalized.includes("entreg")) return "default" as const
+  if (normalized.includes("envi")) return "secondary" as const
+  if (normalized.includes("pago") || normalized.includes("aprov")) return "default" as const
+  return "outline" as const
+}
+
+function getStatusBadgeClassName(status: string | null) {
+  const normalized = (status ?? "").toLowerCase()
+  if (normalized.includes("entreg") || normalized.includes("pago") || normalized.includes("aprov")) {
+    return "bg-green-500 hover:bg-green-600 text-white"
+  }
+  return ""
+}
+
+function getResellerLabel(resellerId: string, profile: ProfileLookupRow | null) {
+  if (!profile) return resellerId
+  if (profile.full_name && profile.email) return `${profile.full_name} (${profile.email})`
+  return profile.full_name ?? profile.email ?? resellerId
+}
+
+export default async function SupplierOrdersPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  const { data: orders, error } = await supabase
+    .from("orders")
+    .select("id,reseller_id,customer_name,created_at,payment_method,total_amount,status")
+    .order("created_at", { ascending: false })
+
+  const rows: SupplierOrderRow[] = (orders ?? []) as SupplierOrderRow[]
+
+  const resellerIds = Array.from(
+    new Set(rows.map((row) => row.reseller_id).filter((id): id is string => typeof id === "string" && id.length > 0))
+  )
+
+  const resellerLookup = new Map<string, ProfileLookupRow>()
+
+  if (!error && resellerIds.length > 0) {
+    const adminSupabase = createAdminClient()
+    if (adminSupabase) {
+      const { data: profiles } = await adminSupabase
+        .from("profiles")
+        .select("id,full_name,email")
+        .in("id", resellerIds)
+
+      for (const profile of (profiles ?? []) as ProfileLookupRow[]) {
+        resellerLookup.set(profile.id, profile)
+      }
+    }
+  }
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
@@ -71,47 +121,59 @@ export default function SupplierOrdersPage() {
             <TableRow>
               <TableHead>Pedido</TableHead>
               <TableHead>Cliente Final</TableHead>
-              <TableHead>Parceiro Reseller</TableHead>
+              <TableHead>Revendedor</TableHead>
               <TableHead>Data</TableHead>
-              <TableHead>Total</TableHead>
               <TableHead>Pagamento</TableHead>
-              <TableHead>Status de Envio</TableHead>
+              <TableHead>Total</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="w-[80px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell className="font-medium">{order.id}</TableCell>
-                <TableCell>{order.customer}</TableCell>
-                <TableCell className="text-muted-foreground">{order.reseller}</TableCell>
-                <TableCell>{order.date}</TableCell>
-                <TableCell>{order.total}</TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={order.payment === "Aprovado" ? "default" : "secondary"}
-                  >
-                    {order.payment}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={
-                      order.status === "Entregue" ? "default" : 
-                      order.status === "Processando" ? "secondary" : 
-                      order.status === "Enviado" ? "outline" : "destructive"
-                    }
-                  >
-                    {order.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
+            {error ? (
+              <TableRow>
+                <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
+                  Não foi possível carregar os pedidos no momento.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
+                  Não há pedidos para exibir.
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((order) => {
+                const resellerId = order.reseller_id ?? "-"
+                const resellerProfile = order.reseller_id ? resellerLookup.get(order.reseller_id) ?? null : null
+
+                return (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">{order.id}</TableCell>
+                    <TableCell>{order.customer_name ?? "-"}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {order.reseller_id ? getResellerLabel(resellerId, resellerProfile) : "-"}
+                    </TableCell>
+                    <TableCell>{formatOrderDate(order.created_at)}</TableCell>
+                    <TableCell>{order.payment_method ?? "-"}</TableCell>
+                    <TableCell>{formatBRL(order.total_amount)}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={getStatusBadgeVariant(order.status)}
+                        className={getStatusBadgeClassName(order.status)}
+                      >
+                        {order.status ?? "-"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" title="Ações">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
           </TableBody>
         </Table>
       </div>
