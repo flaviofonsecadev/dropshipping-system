@@ -1,0 +1,4 @@
+- [x] Layout raiz inclui `<Analytics />` do `@vercel/analytics`.
+- [x] `npm run lint` passa sem erros.
+- [x] `npm run build` passa sem erros.
+- [x] Deploy na Vercel com Web Analytics habilitado registra pageviews no painel (verificação final no painel após o próximo deploy).
