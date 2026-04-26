@@ -1,0 +1,7 @@
+- [x] `/supplier` não usa métricas/listas mockadas e mostra métricas reais com fallback seguro.
+- [x] `/supplier` mostra “Últimos Pedidos” reais com estado vazio/erro.
+- [x] `/supplier/resellers` não usa array mockado e lista revendedores reais (loja + contato + status).
+- [x] `/supplier/resellers` exibe indicadores básicos (quando possível) sem quebrar em caso de dados ausentes.
+- [x] `/reseller` mostra últimos pedidos do revendedor logado e botão “Ver todos pedidos” para `/reseller/orders`.
+- [x] Auditoria confirma ausência de mocks restantes nas páginas alvo do dashboard.
+- [x] `npm run lint` e `npm run build` passam sem erros.
