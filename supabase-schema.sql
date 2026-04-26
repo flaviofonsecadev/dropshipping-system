@@ -1,7 +1,7 @@
 -- Tabela de Perfis
 CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  role TEXT CHECK (role IN ('admin', 'supplier', 'reseller')) DEFAULT 'reseller' NOT NULL,
+  role TEXT CHECK (role IN ('admin', 'supplier', 'reseller', 'customer')) DEFAULT 'reseller' NOT NULL,
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -48,9 +48,17 @@ CREATE POLICY "Administradores podem atualizar todos os perfis"
 -- Função para auto-inserir perfil no signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  desired_role TEXT;
 BEGIN
+  IF COALESCE(new.raw_user_meta_data->>'signup_origin', '') = 'storefront' THEN
+    desired_role := 'customer';
+  ELSE
+    desired_role := 'reseller';
+  END IF;
+
   INSERT INTO public.profiles (id, role)
-  VALUES (new.id, 'reseller'); -- 'reseller' como padrão ao criar nova conta
+  VALUES (new.id, desired_role);
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

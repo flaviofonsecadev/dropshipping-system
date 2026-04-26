@@ -6,6 +6,8 @@ import { BuyButton } from "./produto/[productId]/buy-button"
 import { normalizeStorefrontSettings } from "@/lib/storefront-settings"
 import { normalizeVisualSettings } from "@/lib/visual-settings"
 import type { Metadata } from "next"
+import { CartIndicator } from "./cart-indicator"
+import { logoutStorefrontAction } from "./storefront-auth-actions"
 
 type StorefrontStore = {
   reseller_id: string
@@ -102,17 +104,6 @@ function IconHeart(props: { className?: string }) {
   )
 }
 
-function IconCart(props: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={props.className} aria-hidden="true">
-      <path strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="M6 6h15l-2 9H7L6 6Z" />
-      <path strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="M6 6 5 3H2" />
-      <path strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="M8.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
-      <path strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="M17.5 21a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
-    </svg>
-  )
-}
-
 export default async function StorefrontPage({
   params,
   searchParams,
@@ -124,6 +115,9 @@ export default async function StorefrontPage({
   const { slug } = await params
   const sp = (await searchParams) ?? {}
   const q = (sp.q ?? "").trim()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { data: store } = await supabase
     .from("reseller_stores")
@@ -146,6 +140,7 @@ export default async function StorefrontPage({
   const settings = normalizeStorefrontSettings(storeTyped.storefront_settings)
   const visual = normalizeVisualSettings(storeTyped.visual_settings)
   const typedItems = (items ?? []) as unknown as ResellerProductRow[]
+  const loginHref = `/loja/${storeTyped.slug}/login?next=${encodeURIComponent(`/loja/${storeTyped.slug}/checkout`)}`
 
   const products = typedItems
     .filter((i) => Boolean(i.product))
@@ -254,18 +249,31 @@ export default async function StorefrontPage({
           </form>
 
           <div className="flex items-center gap-2">
-            <a href="#" className="h-10 w-10 rounded-lg border border-zinc-200 bg-white flex items-center justify-center" aria-label="Conta">
-              <IconUser className="h-5 w-5" />
-            </a>
+            {user ? (
+              <form action={logoutStorefrontAction}>
+                <input type="hidden" name="store_slug" value={storeTyped.slug} />
+                <input type="hidden" name="next" value={`/loja/${storeTyped.slug}`} />
+                <button
+                  type="submit"
+                  className="h-10 w-10 rounded-lg border border-zinc-200 bg-white flex items-center justify-center"
+                  aria-label="Sair"
+                >
+                  <IconUser className="h-5 w-5" />
+                </button>
+              </form>
+            ) : (
+              <Link
+                href={loginHref}
+                className="h-10 w-10 rounded-lg border border-zinc-200 bg-white flex items-center justify-center"
+                aria-label="Entrar"
+              >
+                <IconUser className="h-5 w-5" />
+              </Link>
+            )}
             <a href="#" className="hidden sm:flex h-10 w-10 rounded-lg border border-zinc-200 bg-white items-center justify-center" aria-label="Favoritos">
               <IconHeart className="h-5 w-5" />
             </a>
-            <a href="#" className="h-10 w-10 rounded-lg border border-zinc-200 bg-white flex items-center justify-center relative" aria-label="Carrinho">
-              <IconCart className="h-5 w-5" />
-              <span className="absolute -right-1 -top-1 h-5 min-w-5 px-1 rounded-full bg-black text-white text-[11px] leading-5 text-center">
-                0
-              </span>
-            </a>
+            <CartIndicator storeSlug={storeTyped.slug} />
           </div>
         </div>
 

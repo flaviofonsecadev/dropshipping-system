@@ -1,11 +1,13 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-import { BuyButton } from "./buy-button"
 import type { CSSProperties } from "react"
 import { normalizeStorefrontSettings } from "@/lib/storefront-settings"
 import { normalizeVisualSettings } from "@/lib/visual-settings"
 import type { Metadata } from "next"
+import { CartIndicator } from "../../cart-indicator"
+import { ProductAddToCart } from "./product-add-to-cart"
+import { logoutStorefrontAction } from "../../storefront-auth-actions"
 
 type StorefrontStore = {
   reseller_id: string
@@ -48,6 +50,15 @@ function extractYouTubeId(url: string) {
 function extractTikTokId(url: string) {
   const m = url.match(/\/video\/(\d+)/)
   return m ? m[1] : null
+}
+
+function IconUser(props: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={props.className} aria-hidden="true">
+      <path strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="M20 21a8 8 0 0 0-16 0" />
+      <path strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="M12 13a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
+    </svg>
+  )
 }
 
 export async function generateMetadata({
@@ -95,6 +106,9 @@ export default async function StorefrontProductPage({
   const { slug, productId } = await params
   const sp = (await searchParams) ?? {}
   const q = (sp.q ?? "").trim()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { data: store } = await supabase
     .from("reseller_stores")
@@ -130,14 +144,6 @@ export default async function StorefrontProductPage({
   const base = Number(product.base_cost) || 0
   const margin = rpTyped.custom_margin ?? (Number(product.suggested_margin) || 0)
   const price = base + margin
-  const items = [
-    {
-      product_id: product.id,
-      qty: 1,
-      base_cost: base,
-      reseller_margin: margin,
-    },
-  ]
 
   const primary = storeTyped.primary_color || "#111827"
   const accent = storeTyped.accent_color || "#fbbf24"
@@ -156,6 +162,7 @@ export default async function StorefrontProductPage({
     settings.topbar.contact_target === "external" && settings.topbar.contact_url
       ? settings.topbar.contact_url
       : `${homeHref}#contato`
+  const loginHref = `/loja/${storeTyped.slug}/login?next=${encodeURIComponent(`/loja/${storeTyped.slug}/checkout`)}`
 
   return (
     <div className="min-h-screen bg-white text-zinc-900" style={cssVars}>
@@ -216,11 +223,35 @@ export default async function StorefrontProductPage({
             </div>
           </form>
 
-          <div className="hidden sm:flex items-center gap-2">
-            <Link href={`/loja/${storeTyped.slug}${q ? `?q=${encodeURIComponent(q)}` : ""}`} className="text-sm text-zinc-700 hover:text-zinc-900">
-              Voltar
-            </Link>
-            <div className="text-sm font-semibold">R$ {formatBRL(price)}</div>
+          <div className="flex items-center gap-2">
+            {user ? (
+              <form action={logoutStorefrontAction}>
+                <input type="hidden" name="store_slug" value={storeTyped.slug} />
+                <input type="hidden" name="next" value={homeHref} />
+                <button
+                  type="submit"
+                  className="h-10 w-10 rounded-lg border border-zinc-200 bg-white flex items-center justify-center"
+                  aria-label="Sair"
+                >
+                  <IconUser className="h-5 w-5" />
+                </button>
+              </form>
+            ) : (
+              <Link
+                href={loginHref}
+                className="h-10 w-10 rounded-lg border border-zinc-200 bg-white flex items-center justify-center"
+                aria-label="Entrar"
+              >
+                <IconUser className="h-5 w-5" />
+              </Link>
+            )}
+            <CartIndicator storeSlug={storeTyped.slug} />
+            <div className="hidden sm:flex items-center gap-2">
+              <Link href={`/loja/${storeTyped.slug}${q ? `?q=${encodeURIComponent(q)}` : ""}`} className="text-sm text-zinc-700 hover:text-zinc-900">
+                Voltar
+              </Link>
+              <div className="text-sm font-semibold">R$ {formatBRL(price)}</div>
+            </div>
           </div>
         </div>
       </header>
@@ -287,11 +318,12 @@ export default async function StorefrontProductPage({
             </div>
 
             <div className="text-sm text-zinc-600">Frete calculado no checkout.</div>
-            <BuyButton
+            <ProductAddToCart
               resellerId={store.reseller_id}
               storeSlug={store.slug}
-              items={items}
-              className="w-full h-12 text-base font-semibold rounded-none"
+              productId={product.id}
+              baseCost={base}
+              resellerMargin={margin}
               label={settings.product_card.buy_label}
             />
           </div>

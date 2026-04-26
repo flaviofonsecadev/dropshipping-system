@@ -1,0 +1,11 @@
+- [x] Storefront permite adicionar ao carrinho a partir da vitrine e da página do produto
+- [x] Carrinho persiste por `store_slug` e permite editar quantidade/remover
+- [x] `/loja/[slug]/carrinho` renderiza itens e estado vazio
+- [x] `/loja/[slug]/checkout` não usa `prompt()` e guia o cliente por dados + frete + pagamento
+- [x] Checkout chama `/api/checkout/shipping` e exige seleção de frete antes de avançar
+- [x] Checkout chama `/api/checkout/asaas` e recebe `invoiceUrl` em sucesso
+- [x] Login do cliente na loja funciona com redirect de volta ao checkout
+- [x] Cadastros via loja não criam `profiles.role=reseller` (role `customer`)
+- [x] `/api/checkout/shipping` não retorna mock e falha com 503 quando não configurado
+- [x] `npm run lint` passa (sem erros)
+- [x] `npm run build` passa

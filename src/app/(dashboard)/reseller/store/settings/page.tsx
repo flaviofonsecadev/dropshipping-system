@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { StoreSettingsForm } from './store-settings-form'
+import { headers } from 'next/headers'
 
 export default async function ResellerStoreSettingsPage({
   searchParams,
@@ -19,5 +20,10 @@ export default async function ResellerStoreSettingsPage({
     ? await supabase.from('reseller_stores').select('*').eq('reseller_id', user.id).maybeSingle()
     : { data: null }
 
-  return <StoreSettingsForm store={store} saved={saved} error={error} />
+  const h = await headers()
+  const host = h.get('x-forwarded-host') ?? h.get('host')
+  const proto = h.get('x-forwarded-proto') ?? 'http'
+  const origin = host ? `${proto}://${host}` : ''
+
+  return <StoreSettingsForm store={store} saved={saved} error={error} origin={origin} />
 }

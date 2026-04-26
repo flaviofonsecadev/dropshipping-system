@@ -40,10 +40,12 @@ export function StoreSettingsForm({
   store,
   saved,
   error,
+  origin,
 }: {
   store: ResellerStore | null
   saved: boolean
   error: string | null
+  origin: string
 }) {
   const supabase = useMemo(() => createClient(), [])
 
@@ -129,11 +131,11 @@ export function StoreSettingsForm({
   const bannerInputRef = useRef<HTMLInputElement>(null)
 
   const publicUrl = useMemo(() => {
-    const base = typeof window !== "undefined" ? window.location.origin : ""
+    const base = origin.trim()
     const effectiveSlug = (slug || slugify(name)).trim()
     if (!base || !effectiveSlug) return null
     return `${base}/loja/${effectiveSlug}`
-  }, [name, slug])
+  }, [name, origin, slug])
 
   const errorMessage = useMemo(() => {
     if (!error) return null

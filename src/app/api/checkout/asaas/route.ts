@@ -12,7 +12,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Configuração do servidor ausente." }, { status: 500 })
     }
 
-    const body = (await request.json()) as Record<string, unknown>
+    let body: Record<string, unknown>
+    try {
+      body = (await request.json()) as Record<string, unknown>
+    } catch {
+      return NextResponse.json({ error: "Requisição inválida." }, { status: 400 })
+    }
     const items = Array.isArray(body.items) ? (body.items as CheckoutItem[]) : null
     const shipping_cost = typeof body.shipping_cost === "number" ? body.shipping_cost : 0
     const payment_method = typeof body.payment_method === "string" ? body.payment_method : "pix"
@@ -72,11 +77,19 @@ export async function POST(request: Request) {
     const supplierFixed = round2(supplierValue)
     const total = round2(totalValue)
 
-    const customerId = await getOrCreateCustomer(resellerApiKey, {
-      name: customer_name,
-      cpfCnpj: customer_cpf,
-      email: customer_email ?? undefined,
-    })
+    let customerId = ""
+    try {
+      customerId = await getOrCreateCustomer(resellerApiKey, {
+        name: customer_name,
+        cpfCnpj: customer_cpf,
+        email: customer_email ?? undefined,
+      })
+    } catch (e) {
+      if (e instanceof AsaasError) {
+        return NextResponse.json({ error: e.message }, { status: 400 })
+      }
+      return NextResponse.json({ error: "Erro ao validar/criar cliente no Asaas." }, { status: 500 })
+    }
 
     const dueDate = new Date().toISOString().slice(0, 10)
 
@@ -138,6 +151,13 @@ export async function POST(request: Request) {
       invoiceUrl: payment.invoiceUrl ?? null,
     })
   } catch (error: unknown) {
+    const safe =
+      error instanceof AsaasError
+        ? { name: error.name, status: error.status, code: error.code, message: error.message }
+        : error instanceof Error
+          ? { name: error.name, message: error.message }
+          : { message: String(error) }
+    console.error("asaas checkout error", safe)
     return NextResponse.json({ error: "Erro ao processar transação no Asaas." }, { status: 500 })
   }
 }

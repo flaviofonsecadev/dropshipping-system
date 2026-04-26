@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
-type CheckoutItem = { qty?: number }
+type CheckoutItem = { product_id?: string; qty?: number }
 
 type SuperFreteQuote = {
   name?: string
@@ -17,6 +18,19 @@ function getSuperFreteBaseUrl() {
 
 function getSuperFreteUserAgent() {
   return process.env.SUPERFRETE_USER_AGENT?.trim() || "DropshippingMilionario (contato@dropshippingmilionario.com)"
+}
+
+function createAnonSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  if (!url || !key) return null
+  return createSupabaseClient(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  })
 }
 
 function parseQuotes(data: unknown): Array<{ name: string; price: number; estimatedDays?: number }> {
@@ -57,63 +71,130 @@ export async function POST(request: Request) {
     const origin = (process.env.SUPPLIER_ORIGIN_POSTAL_CODE ?? "").replace(/\D/g, "")
     const services = process.env.SUPERFRETE_SERVICES?.trim() || "1,2"
 
-    if (token && origin && origin.length === 8) {
-      const weight = Number(process.env.SUPERFRETE_DEFAULT_WEIGHT_KG ?? "0.3")
-      const height = Number(process.env.SUPERFRETE_DEFAULT_HEIGHT_CM ?? "4")
-      const width = Number(process.env.SUPERFRETE_DEFAULT_WIDTH_CM ?? "16")
-      const length = Number(process.env.SUPERFRETE_DEFAULT_LENGTH_CM ?? "20")
+    const missing: string[] = []
+    if (!token) missing.push("SUPERFRETE_TOKEN")
+    if (!origin || origin.length !== 8) missing.push("SUPPLIER_ORIGIN_POSTAL_CODE")
 
-      const products = items.map((it) => ({
+    if (missing.length > 0) {
+      return NextResponse.json(
+        {
+          error: "Frete indisponível no momento. Configuração do provedor de frete ausente no servidor.",
+          code: "SHIPPING_PROVIDER_NOT_CONFIGURED",
+          missing,
+        },
+        { status: 503 }
+      )
+    }
+
+    const weight = Number(process.env.SUPERFRETE_DEFAULT_WEIGHT_KG ?? "0.3")
+    const height = Number(process.env.SUPERFRETE_DEFAULT_HEIGHT_CM ?? "4")
+    const width = Number(process.env.SUPERFRETE_DEFAULT_WIDTH_CM ?? "16")
+    const length = Number(process.env.SUPERFRETE_DEFAULT_LENGTH_CM ?? "20")
+
+    const qtyByProductId = new Map<string, number>()
+    for (const it of items) {
+      const productId = typeof it.product_id === "string" ? it.product_id : ""
+      const qty = Math.max(Math.trunc(Number(it.qty ?? 1)), 1)
+      if (!productId) continue
+      qtyByProductId.set(productId, (qtyByProductId.get(productId) ?? 0) + qty)
+    }
+
+    const hasProductIds = qtyByProductId.size > 0
+
+    let products: Array<{ quantity: number; weight: number; height: number; width: number; length: number }> = []
+    if (!hasProductIds) {
+      products = items.map((it) => ({
         quantity: Math.max(Math.trunc(Number(it.qty ?? 1)), 1),
         weight,
         height,
         width,
         length,
       }))
+    } else {
+      const supabase = createAnonSupabase()
+      if (!supabase) {
+        return NextResponse.json(
+          { error: "Frete indisponível no momento.", code: "SERVER_NOT_CONFIGURED" },
+          { status: 503 }
+        )
+      }
 
-      const res = await fetch(`${getSuperFreteBaseUrl()}/api/v0/calculator`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "User-Agent": getSuperFreteUserAgent(),
-          accept: "application/json",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          from: { postal_code: origin },
-          to: { postal_code: destinationZip },
-          services,
-          options: {
-            own_hand: false,
-            receipt: false,
-            insurance_value: 0,
-            use_insurance_value: false,
-          },
-          products,
-        }),
-      })
+      const productIds = Array.from(qtyByProductId.keys())
+      const { data, error } = await supabase
+        .from("products")
+        .select("id,weight_kg,length_cm,width_cm,height_cm")
+        .in("id", productIds)
 
-      const text = await res.text()
-      const data = text ? (JSON.parse(text) as unknown) : null
-      if (!res.ok) {
+      if (error) {
         return NextResponse.json({ error: "Erro ao calcular o frete." }, { status: 500 })
       }
 
-      const options = parseQuotes(data)
-      return NextResponse.json({ success: true, options })
+      const dimsById = new Map<string, { weight: number; length: number; width: number; height: number }>()
+      for (const row of (data ?? []) as Array<Record<string, unknown>>) {
+        const id = typeof row.id === "string" ? row.id : ""
+        if (!id) continue
+        const w = Number(row.weight_kg)
+        const l = Number(row.length_cm)
+        const wi = Number(row.width_cm)
+        const h = Number(row.height_cm)
+        dimsById.set(id, {
+          weight: Number.isFinite(w) && w > 0 ? w : weight,
+          length: Number.isFinite(l) && l > 0 ? l : length,
+          width: Number.isFinite(wi) && wi > 0 ? wi : width,
+          height: Number.isFinite(h) && h > 0 ? h : height,
+        })
+      }
+
+      const missingProductIds = productIds.filter((id) => !dimsById.has(id))
+      if (missingProductIds.length > 0) {
+        return NextResponse.json(
+          { error: "Não foi possível calcular o frete para todos os itens do carrinho.", code: "SHIPPING_PRODUCTS_NOT_FOUND", missingProductIds },
+          { status: 400 }
+        )
+      }
+
+      products = productIds.map((id) => {
+        const dims = dimsById.get(id)!
+        return {
+          quantity: qtyByProductId.get(id)!,
+          weight: dims.weight,
+          height: dims.height,
+          width: dims.width,
+          length: dims.length,
+        }
+      })
     }
 
-    const baseShipping = 15.9
-    const extraPerItem = 2.5
-    const totalShipping = baseShipping + (items.length - 1) * extraPerItem
-
-    return NextResponse.json({
-      success: true,
-      options: [
-        { name: "PAC (Padrão)", price: Math.round(totalShipping * 100) / 100, estimatedDays: 7 },
-        { name: "SEDEX (Expresso)", price: Math.round(totalShipping * 1.8 * 100) / 100, estimatedDays: 3 },
-      ],
+    const res = await fetch(`${getSuperFreteBaseUrl()}/api/v0/calculator`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "User-Agent": getSuperFreteUserAgent(),
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        from: { postal_code: origin },
+        to: { postal_code: destinationZip },
+        services,
+        options: {
+          own_hand: false,
+          receipt: false,
+          insurance_value: 0,
+          use_insurance_value: false,
+        },
+        products,
+      }),
     })
+
+    const text = await res.text()
+    const data = text ? (JSON.parse(text) as unknown) : null
+    if (!res.ok) {
+      return NextResponse.json({ error: "Erro ao calcular o frete." }, { status: 500 })
+    }
+
+    const options = parseQuotes(data)
+    return NextResponse.json({ success: true, options })
   } catch (error: unknown) {
     return NextResponse.json(
       { error: "Erro ao calcular o frete." },
