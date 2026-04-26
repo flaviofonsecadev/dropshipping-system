@@ -33,6 +33,31 @@ function formatBRL(value: number) {
   return value.toFixed(2).replace(".", ",")
 }
 
+function toCents(value: number) {
+  return Math.round((Number(value) || 0) * 100)
+}
+
+function formatCentsBRL(cents: number) {
+  return formatBRL((Number(cents) || 0) / 100)
+}
+
+function splitInstallments(totalCents: number, count: 1 | 2 | 3) {
+  const safeTotal = Math.max(0, Math.trunc(totalCents))
+  const base = Math.floor(safeTotal / count)
+  const remainder = safeTotal - base * count
+  const parts = Array.from({ length: count }, (_, idx) => base + (idx < remainder ? 1 : 0))
+  return parts as number[]
+}
+
+function installmentsLabel(totalCents: number, count: 1 | 2 | 3) {
+  const parts = splitInstallments(totalCents, count)
+  const first = parts[0] ?? 0
+  const allEqual = parts.every((p) => p === first)
+  if (allEqual) return `${count}x de R$ ${formatCentsBRL(first)}`
+  const desc = parts.map((p, idx) => `${idx + 1}ª R$ ${formatCentsBRL(p)}`).join(" + ")
+  return `${count}x: ${desc}`
+}
+
 function onlyDigits(value: string) {
   return value.replace(/\D/g, "")
 }
@@ -79,6 +104,7 @@ export function StorefrontCheckoutClient(props: { storeSlug: string; resellerId:
   const subtotal = useMemo(() => cartSubtotal(cart.items), [cart.items])
   const shippingCost = selectedShipping ? Number(selectedShipping.price) || 0 : 0
   const total = subtotal + shippingCost
+  const totalCents = useMemo(() => toCents(total), [total])
 
   useEffect(() => {
     const ids = cart.items.map((it) => it.product_id).filter(Boolean)
@@ -548,9 +574,9 @@ export function StorefrontCheckoutClient(props: { storeSlug: string; resellerId:
                       onChange={(e) => setInstallments(Math.min(Math.max(Math.trunc(Number(e.target.value)), 1), 3) as 1 | 2 | 3)}
                       className="h-11 rounded-lg border border-zinc-200 bg-white px-4 text-sm outline-none focus:border-zinc-400"
                     >
-                      <option value="1">1x de R$ {formatBRL(total)}</option>
-                      <option value="2">2x de R$ {formatBRL(total / 2)}</option>
-                      <option value="3">3x de R$ {formatBRL(total / 3)}</option>
+                      <option value="1">{installmentsLabel(totalCents, 1)}</option>
+                      <option value="2">{installmentsLabel(totalCents, 2)}</option>
+                      <option value="3">{installmentsLabel(totalCents, 3)}</option>
                     </select>
                   </div>
                 )}

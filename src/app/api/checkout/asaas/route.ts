@@ -74,8 +74,17 @@ export async function POST(request: Request) {
     const totalValue = baseCostTotal + resellerMarginTotal + shippingCost
 
     const round2 = (n: number) => Math.round(n * 100) / 100
+    const toCents = (n: number) => Math.round((Number(n) || 0) * 100)
     const supplierFixed = round2(supplierValue)
     const total = round2(totalValue)
+
+    if (!Number.isFinite(total) || total <= 0) {
+      return NextResponse.json({ error: "Total inválido para iniciar o checkout." }, { status: 400 })
+    }
+
+    if (!Number.isFinite(supplierFixed) || supplierFixed < 0 || supplierFixed > total) {
+      return NextResponse.json({ error: "Valores inválidos para split do fornecedor." }, { status: 400 })
+    }
 
     let customerId = ""
     try {
@@ -95,6 +104,26 @@ export async function POST(request: Request) {
 
     const billingType = payment_method === "card" ? "CREDIT_CARD" : "PIX"
     const orderPaymentMethod = billingType === "CREDIT_CARD" ? "Cartão" : "PIX"
+
+    const installmentCount = billingType === "CREDIT_CARD" && installments > 1 ? installments : undefined
+    const installmentValue = installmentCount ? Math.trunc(toCents(total) / installmentCount) / 100 : undefined
+
+    const split =
+      billingType === "CREDIT_CARD" && installments > 1
+        ? (() => {
+            const totalCents = toCents(total)
+            const supplierCents = toCents(supplierFixed)
+            const percent = Math.round((supplierCents * 10000) / totalCents) / 100
+            if (!Number.isFinite(percent) || percent <= 0 || percent > 100) {
+              return null
+            }
+            return [{ walletId: supplierWalletId, percentualValue: percent }]
+          })()
+        : [{ walletId: supplierWalletId, fixedValue: supplierFixed }]
+
+    if (!split) {
+      return NextResponse.json({ error: "Não foi possível calcular o split para parcelamento." }, { status: 400 })
+    }
 
     const { data: createdOrder, error: orderCreateError } = await admin
       .from("orders")
@@ -121,11 +150,12 @@ export async function POST(request: Request) {
         customer: customerId,
         billingType,
         value: total,
-        installmentCount: billingType === "CREDIT_CARD" ? installments : undefined,
+        installmentCount,
+        installmentValue,
         dueDate,
         description: `Pedido ${createdOrder.id} - ${store_slug}`,
         externalReference: createdOrder.id,
-        split: [{ walletId: supplierWalletId, fixedValue: supplierFixed }],
+        split,
       })
     } catch (e) {
       await admin.from("orders").update({ status: "Erro Pagamento", updated_at: new Date().toISOString() }).eq("id", createdOrder.id)

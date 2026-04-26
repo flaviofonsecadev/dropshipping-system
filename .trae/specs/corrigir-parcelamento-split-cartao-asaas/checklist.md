@@ -1,0 +1,5 @@
+- [x] Checkout exibe parcelas em centavos com soma exata do total (ex.: 102,16 em 3x).
+- [x] API `/api/checkout/asaas` envia `installmentValue` coerente em cartão parcelado.
+- [x] Cartão parcelado com split não gera erro do Asaas de “split excede valor a receber da cobrança”.
+- [x] PIX e cartão 1x continuam usando split fixo (repasse exato).
+- [x] Build e lint passam sem erros.

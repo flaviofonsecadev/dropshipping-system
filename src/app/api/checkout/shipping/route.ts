@@ -33,6 +33,12 @@ function createAnonSupabase() {
   })
 }
 
+function serviceNameFromId(serviceId: number): string | null {
+  if (serviceId === 1) return "PAC"
+  if (serviceId === 2) return "SEDEX"
+  return null
+}
+
 function parseQuotes(data: unknown): Array<{ name: string; price: number; estimatedDays?: number }> {
   const candidates: unknown[] =
     Array.isArray(data) ? data :
@@ -43,7 +49,11 @@ function parseQuotes(data: unknown): Array<{ name: string; price: number; estima
   const out: Array<{ name: string; price: number; estimatedDays?: number }> = []
   for (const raw of candidates) {
     const r = raw as SuperFreteQuote
-    const name = typeof r.name === "string" ? r.name : typeof r.service === "string" ? r.service : null
+    const name =
+      typeof r.name === "string" ? r.name :
+      typeof r.service === "string" ? r.service :
+      typeof r.service === "number" && Number.isFinite(r.service) ? (serviceNameFromId(r.service) ?? `Serviço ${r.service}`) :
+      null
     const priceNum = typeof r.price === "number" ? r.price : typeof r.price === "string" ? Number(r.price) : Number.NaN
     const daysRaw = r.delivery_time ?? r.deliveryTime
     const daysNum = typeof daysRaw === "number" ? daysRaw : typeof daysRaw === "string" ? Number(daysRaw) : Number.NaN
