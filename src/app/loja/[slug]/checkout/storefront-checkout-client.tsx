@@ -23,6 +23,12 @@ type ShippingOption = {
   estimatedDays?: number
 }
 
+type PixQrCode = {
+  encodedImage: string
+  payload: string
+  expirationDate?: string
+}
+
 function formatBRL(value: number) {
   return value.toFixed(2).replace(".", ",")
 }
@@ -65,6 +71,7 @@ export function StorefrontCheckoutClient(props: { storeSlug: string; resellerId:
   const [isPaymentLoading, setIsPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null)
+  const [pixQrCode, setPixQrCode] = useState<PixQrCode | null>(null)
   const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null)
 
   const isCartValid = Boolean(cart.reseller_id || props.resellerId) && cart.items.length > 0
@@ -122,6 +129,7 @@ export function StorefrontCheckoutClient(props: { storeSlug: string; resellerId:
       setSelectedShippingIdx(null)
       setShippingError(null)
       setInvoiceUrl(null)
+      setPixQrCode(null)
       setPaymentError(null)
       setPaymentSuccessMessage(null)
     }
@@ -134,6 +142,7 @@ export function StorefrontCheckoutClient(props: { storeSlug: string; resellerId:
     setPaymentError(null)
     setPaymentSuccessMessage(null)
     setInvoiceUrl(null)
+    setPixQrCode(null)
     setStep(next)
   }
 
@@ -186,6 +195,7 @@ export function StorefrontCheckoutClient(props: { storeSlug: string; resellerId:
     setIsPaymentLoading(true)
     setPaymentError(null)
     setInvoiceUrl(null)
+    setPixQrCode(null)
     setPaymentSuccessMessage(null)
     try {
       if (!selectedShipping) {
@@ -210,7 +220,12 @@ export function StorefrontCheckoutClient(props: { storeSlug: string; resellerId:
         }),
       })
 
-      const data = (await res.json().catch(() => null)) as { invoiceUrl?: string | null; error?: string; message?: string } | null
+      const data = (await res.json().catch(() => null)) as {
+        invoiceUrl?: string | null
+        error?: string
+        message?: string
+        pix?: PixQrCode | null
+      } | null
       if (!res.ok) {
         setPaymentError(data?.error || "Não foi possível iniciar o pagamento.")
         return
@@ -219,6 +234,9 @@ export function StorefrontCheckoutClient(props: { storeSlug: string; resellerId:
       const url = typeof data?.invoiceUrl === "string" && data.invoiceUrl ? data.invoiceUrl : null
       setPaymentSuccessMessage(data?.message || "Cobrança criada com sucesso.")
       setInvoiceUrl(url)
+      if (paymentMethod === "pix" && data?.pix && typeof data.pix.encodedImage === "string" && typeof data.pix.payload === "string") {
+        setPixQrCode(data.pix)
+      }
       if (url) {
         const opened = window.open(url, "_blank", "noopener,noreferrer")
         if (!opened) {
@@ -461,6 +479,41 @@ export function StorefrontCheckoutClient(props: { storeSlug: string; resellerId:
                         </a>
                       </span>
                     )}
+                  </div>
+                )}
+
+                {paymentMethod === "pix" && pixQrCode && (
+                  <div className="border border-zinc-200 bg-white rounded-xl p-5 space-y-4">
+                    <div className="text-sm font-medium">Pague com PIX</div>
+                    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-4 items-start">
+                      <div className="border border-zinc-200 rounded-lg p-3 bg-white w-fit">
+                        <img src={`data:image/png;base64,${pixQrCode.encodedImage}`} alt="QR Code PIX" className="w-[170px] h-[170px]" />
+                      </div>
+                      <div className="space-y-3">
+                        <div className="text-sm text-zinc-700">Escaneie o QR Code no app do seu banco, ou copie o código abaixo.</div>
+                        <div className="grid gap-2">
+                          <textarea
+                            readOnly
+                            value={pixQrCode.payload}
+                            className="min-h-[110px] rounded-lg border border-zinc-200 bg-white px-4 py-3 text-xs outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(pixQrCode.payload)
+                                setPaymentSuccessMessage("Código PIX copiado.")
+                              } catch {
+                                setPaymentSuccessMessage("Não foi possível copiar automaticamente. Selecione e copie o código.")
+                              }
+                            }}
+                            className="inline-flex items-center justify-center h-11 px-5 bg-zinc-900 text-white text-sm font-medium rounded-lg"
+                          >
+                            Copiar código PIX
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/utils/supabase/server"
 import { decryptSecret } from "@/lib/secret"
-import { AsaasError, createPayment, getOrCreateCustomer } from "@/lib/asaas"
+import { AsaasError, createPayment, getOrCreateCustomer, getPixQrCode, type PixQrCodeResponse } from "@/lib/asaas"
 
 type CheckoutItem = { product_id: string; qty: number; base_cost: number; reseller_margin: number }
 
@@ -143,12 +143,24 @@ export async function POST(request: Request) {
       })
       .eq("id", createdOrder.id)
 
+    let pix: PixQrCodeResponse | null = null
+    if (billingType === "PIX") {
+      try {
+        pix = await getPixQrCode(resellerApiKey, payment.id)
+      } catch (e) {
+        if (e instanceof AsaasError) {
+          return NextResponse.json({ error: e.message }, { status: 400 })
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: "Transação criada no Asaas.",
       orderId: createdOrder.id,
       transactionId: payment.id,
       invoiceUrl: payment.invoiceUrl ?? null,
+      pix,
     })
   } catch (error: unknown) {
     const safe =

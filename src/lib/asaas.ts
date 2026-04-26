@@ -248,3 +248,13 @@ export async function createPayment(apiKey: string, input: CreatePaymentInput): 
     body: JSON.stringify(payload),
   })
 }
+
+export type PixQrCodeResponse = {
+  encodedImage: string
+  payload: string
+  expirationDate?: string
+}
+
+export async function getPixQrCode(apiKey: string, paymentId: string): Promise<PixQrCodeResponse> {
+  return asaasRequest<PixQrCodeResponse>(apiKey, `/payments/${paymentId}/pixQrCode`, { method: "GET" })
+}
